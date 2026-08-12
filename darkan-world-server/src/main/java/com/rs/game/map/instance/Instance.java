@@ -1,0 +1,326 @@
+package com.rs.game.map.instance;
+
+import com.rs.Settings;
+import com.rs.game.model.entity.Entity;
+import com.rs.game.model.entity.npc.NPC;
+import com.rs.game.model.entity.player.Player;
+import com.rs.game.tasks.WorldTasks;
+import com.rs.lib.game.Tile;
+import com.rs.lib.util.MapUtils;
+import com.rs.lib.util.MapUtils.Structure;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+public class Instance {
+    private static final Map<UUID, Instance> INSTANCES = Object2ObjectMaps.synchronize(new Object2ObjectOpenHashMap<>());
+
+    private final UUID id = UUID.randomUUID();
+    private final Tile returnTo;
+    private int[] entranceOffset;
+    private boolean persistent;
+    private transient int[] chunkBase;
+    private final transient IntSet chunkIds = new IntOpenHashSet();
+    private final int width;
+    private final int height;
+
+    final boolean copyNpcs;
+    final boolean copyMulti;
+
+    private final transient AtomicBoolean destroyed;
+
+    //No-args constructor that should never be used other than by GSON's hacky BS.
+    private Instance() {
+        this.copyMulti = false;
+        this.returnTo = Settings.getConfig().getPlayerStartTile();
+        this.width = 1;
+        this.height = 1;
+        this.copyNpcs = false;
+        this.destroyed = new AtomicBoolean(false);
+    }
+
+    private Instance(boolean multizone) {
+        this.destroyed = new AtomicBoolean(false);
+        this.copyMulti = multizone;
+        this.returnTo = Settings.getConfig().getPlayerStartTile();
+        this.width = 1;
+        this.height = 1;
+        this.copyNpcs = false;
+    }
+
+    private Instance(Tile returnTo, int width, int height, boolean copyNpcs, boolean copyMulti) {
+        this.destroyed = new AtomicBoolean(false);
+        this.returnTo = returnTo;
+        this.width = width;
+        this.height = height;
+        this.copyMulti = copyMulti;
+        this.copyNpcs = copyNpcs;
+    }
+
+    public static Instance of(Tile returnTo, int width, int height, boolean copyNpcs, boolean copyMulti) {
+        Instance instance = new Instance(returnTo, width, height, copyNpcs, copyMulti);
+        INSTANCES.put(instance.id, instance);
+        return instance;
+    }
+
+    public static Instance of(Tile returnTo, int width, int height, boolean copyNpcs) {
+        Instance instance = new Instance(returnTo, width, height, copyNpcs, true);
+        INSTANCES.put(instance.id, instance);
+        return instance;
+    }
+
+    public static Instance of(Tile returnTo, int width, int height) {
+        return of(returnTo, width, height, false);
+    }
+
+    public static Instance get(UUID uuid) {
+        return INSTANCES.get(uuid);
+    }
+
+    public int[] getEntranceOffset() {
+        return entranceOffset;
+    }
+
+    public Instance setEntranceOffset(int[] entranceOffset) {
+        this.entranceOffset = entranceOffset;
+        return this;
+    }
+
+    public Instance persist() {
+        persistent = true;
+        return this;
+    }
+
+    public CompletableFuture<Boolean> requestChunkBound() {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        destroyed.set(false);
+        InstanceBuilder.findEmptyChunkBound(this, future);
+        return future;
+    }
+
+    public CompletableFuture<Boolean> copyChunk(int localChunkX, int localChunkY, int plane, int fromChunkX, int fromChunkY, int fromPlane, int rotation, boolean reinitCollision) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        if (chunkBase == null)
+            requestChunkBound().thenAccept(bool -> InstanceBuilder.copyChunk(this, localChunkX, localChunkY, plane, fromChunkX, fromChunkY, fromPlane, rotation, reinitCollision, future)).exceptionally(e -> { future.completeExceptionally(e); return null; });
+        else
+            InstanceBuilder.copyChunk(this, localChunkX, localChunkY, plane, fromChunkX, fromChunkY, fromPlane, rotation, reinitCollision, future);
+        return future;
+    }
+
+    public CompletableFuture<Boolean> clearChunk(int localChunkX, int localChunkY, int plane, boolean reinitCollision) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        if (chunkBase == null)
+            requestChunkBound().thenAccept(bool -> InstanceBuilder.clearChunk(this, localChunkX, localChunkY, plane, reinitCollision, future)).exceptionally(e -> { future.completeExceptionally(e); return null; });
+        else
+            InstanceBuilder.clearChunk(this, localChunkX, localChunkY, plane, reinitCollision, future);
+        return future;
+    }
+
+    public CompletableFuture<Boolean> copy2x2ChunkSquare(int localChunkX, int localChunkY, int fromChunkX, int fromChunkY, int rotation, int[] planes) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        if (chunkBase == null)
+            requestChunkBound().thenAccept(bool -> InstanceBuilder.copy2x2ChunkSquare(this, localChunkX, localChunkY, fromChunkX, fromChunkY, rotation, planes, future)).exceptionally(e -> { future.completeExceptionally(e); return null; });
+        else
+            InstanceBuilder.copy2x2ChunkSquare(this, localChunkX, localChunkY, fromChunkX, fromChunkY, rotation, planes, future);
+        return future;
+    }
+
+    public CompletableFuture<Boolean> copyMap(int localChunkX, int localChunkY, int fromChunkX, int fromChunkY, int size) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        if (chunkBase == null)
+            requestChunkBound().thenAccept(bool -> InstanceBuilder.copyMap(this, localChunkX, localChunkY, fromChunkX, fromChunkY, size, future)).exceptionally(e -> { future.completeExceptionally(e); return null; });
+        else
+            InstanceBuilder.copyMap(this, localChunkX, localChunkY, fromChunkX, fromChunkY, size, future);
+        return future;
+    }
+
+    public CompletableFuture<Boolean> copyMapAllPlanes(int fromChunkX, int fromChunkY, int size) {
+        return copyMap(0, 0, fromChunkX, fromChunkY, size);
+    }
+
+    public CompletableFuture<Boolean> copyMap(int localChunkX, int localChunkY, int[] planes, int fromChunkX, int fromChunkY, int[] fromPlanes, int width, int height) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        if (chunkBase == null)
+            requestChunkBound().thenAccept(bool -> InstanceBuilder.copyMap(this, localChunkX, localChunkY, planes, fromChunkX, fromChunkY, fromPlanes, width, height, copyNpcs, copyMulti, future)).exceptionally(e -> { future.completeExceptionally(e); return null; });
+        else
+            InstanceBuilder.copyMap(this, localChunkX, localChunkY, planes, fromChunkX, fromChunkY, fromPlanes, width, height, copyNpcs, copyMulti, future);
+        return future;
+    }
+
+    public CompletableFuture<Boolean> copyMap(int[] planes, int fromChunkX, int fromChunkY, int[] fromPlanes, int width, int height) {
+        return copyMap(0, 0, planes, fromChunkX, fromChunkY, fromPlanes, width, height);
+    }
+
+    public CompletableFuture<Boolean> copyMapSinglePlane(int fromChunkX, int fromChunkY) {
+        return copyMap(0, 0, new int[1], fromChunkX, fromChunkY, new int[1], width, height);
+    }
+
+    public CompletableFuture<Boolean> copyMapAllPlanes(int fromChunkX, int fromChunkY) {
+        return copyMap(0, 0, new int[] { 0, 1, 2, 3 }, fromChunkX, fromChunkY, new int[] { 0, 1, 2, 3 }, width, height);
+    }
+
+    public CompletableFuture<Boolean> clearMap(int chunkX, int chunkY, int width, int height, int[] planes) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        if (chunkBase == null)
+            requestChunkBound().thenAccept(bool -> InstanceBuilder.clearMap(this, chunkX, chunkY, width, height, planes, future)).exceptionally(e -> { future.completeExceptionally(e); return null; });
+        else
+            InstanceBuilder.clearMap(this, chunkX, chunkY, width, height, planes, future);
+        return future;
+    }
+
+    public CompletableFuture<Boolean> clearMap(int width, int height, int[] planes) {
+        return clearMap(0, 0, width, height, planes);
+    }
+
+    public CompletableFuture<Boolean> clearMap(int[] planes) {
+        return clearMap(width, height, planes);
+    }
+
+    public CompletableFuture<Boolean> destroy() {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        INSTANCES.remove(id);
+        if (destroyed.get()) {
+            future.complete(null);
+            return future;
+        }
+        WorldTasks.schedule(5, () -> {
+            destroyed.set(true);
+            InstanceBuilder.destroyMap(this, future);
+        });
+        return future;
+    }
+
+    public int[] getChunkBase() {
+        return chunkBase;
+    }
+
+    public int getBaseChunkX() {
+        return chunkBase[0];
+    }
+
+    public int getBaseChunkY() {
+        return chunkBase[1];
+    }
+
+    public int getBaseX() {
+        return chunkBase[0] << 3;
+    }
+
+    public int getBaseY() {
+        return chunkBase[1] << 3;
+    }
+
+    public Tile getTileBase() {
+        return Tile.of(getBaseX(), getBaseY(), 0);
+    }
+
+    public Tile getLocalTile(int offsetX, int offsetY, int plane) {
+        return Tile.of(getLocalX(offsetX), getLocalY(offsetY), plane);
+    }
+
+    public Tile getLocalTile(int offsetX, int offsetY) {
+        return getLocalTile(offsetX, offsetY, 0);
+    }
+
+    public int getLocalX(int offset) {
+        return getBaseX() + offset;
+    }
+
+    public int getLocalY(int offset) {
+        return getBaseY() + offset;
+    }
+
+    public int getLocalX(int chunkXOffset, int tileXOffset) {
+        return (getChunkX(chunkXOffset) << 3) + tileXOffset;
+    }
+
+    public int getLocalY(int chunkYOffset, int tileYOffset) {
+        return (getChunkY(chunkYOffset) << 3) + tileYOffset;
+    }
+
+    public int getChunkX(int offsetX) {
+        return getBaseChunkX() + offsetX;
+    }
+
+    public int getChunkY(int offsetY) {
+        return getBaseChunkY() + offsetY;
+    }
+
+    public int getChunkId(int offsetX, int offsetY, int plane) {
+        return MapUtils.encode(Structure.CHUNK, getBaseChunkX()+offsetX, getBaseChunkY()+offsetY, plane);
+    }
+
+    public boolean isCopyNpcs() {
+        return copyNpcs;
+    }
+
+    public boolean isDestroyed() {
+        return destroyed.get();
+    }
+
+    public boolean isCreated() {
+        return chunkBase != null;
+    }
+
+    public IntSet getChunkIds() {
+        return chunkIds;
+    }
+
+    /**
+     * Only the instance builder should be setting this value.
+     */
+    @Deprecated
+    public void setChunkBase(int[] chunkBase) {
+        this.chunkBase = chunkBase;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public Tile getReturnTo() {
+        return returnTo;
+    }
+
+    public void teleportLocal(Entity entity, int localX, int localY, int plane) {
+        if (entity instanceof Player player) {
+            player.setInstancedArea(this);
+        }
+        entity.tele(Tile.of(getBaseX() + localX, getBaseY() + localY, plane));
+    }
+
+    public void teleportChunkLocal(Entity entity, int chunkXOffset, int chunkYOffset, int xOffset, int yOffset, int plane) {
+        if (entity instanceof Player player) {
+            player.setInstancedArea(this);
+        }
+        entity.tele(Tile.of(getLocalX(chunkXOffset, xOffset), getLocalY(chunkYOffset, yOffset), plane));
+    }
+
+    public void teleportTo(Player player) {
+        teleportLocal(player, entranceOffset == null ? width * 4 : entranceOffset[0], entranceOffset == null ? height * 4 : entranceOffset[1], entranceOffset == null || entranceOffset.length < 3 ? 0 : entranceOffset[2]);
+    }
+
+    public void teleportTo(NPC npc) {
+        teleportLocal(npc, entranceOffset == null ? width * 4 : entranceOffset[0], entranceOffset == null ? height * 4 : entranceOffset[1], entranceOffset == null || entranceOffset.length < 3 ? 0 : entranceOffset[2]);
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public boolean isPersistent() {
+        return persistent;
+    }
+
+}

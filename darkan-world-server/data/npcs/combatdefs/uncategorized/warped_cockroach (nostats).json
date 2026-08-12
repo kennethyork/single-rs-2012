@@ -1,0 +1,23 @@
+{
+  "names": [
+    "Warped cockroach"
+  ],
+  "attackAnim": 8785,
+  "attackSound": -1,
+  "defenceAnim": 8791,
+  "defendSound": -1,
+  "deathAnim": 8788,
+  "deathDelay": 6,
+  "deathSound": -1,
+  "respawnDelay": 59,
+  "hitpoints": 20,
+  "maxHit": 15,
+  "attackStyle": "MELEE",
+  "attackRange": -1,
+  "attackGfx": -1,
+  "attackProjectile": -1,
+  "agressivenessType": "PASSIVE",
+  "aggroDistance": 4,
+  "deAggroDistance": -1,
+  "maxDistFromSpawn": -1
+}

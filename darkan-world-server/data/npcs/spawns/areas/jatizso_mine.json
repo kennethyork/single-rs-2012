@@ -1,0 +1,56 @@
+[
+  {
+    "tile": {
+      "plane": 0,
+      "x": 2402,
+      "y": 10216
+    },
+    "comment": "Ice Troll",
+    "npcId": 1560
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 2403,
+      "y": 1561
+    },
+    "comment": "Ice Troll",
+    "npcId": 1562
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 2402,
+      "y": 10224
+    },
+    "comment": "Ice Troll",
+    "npcId": 1563
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 2400,
+      "y": 10226
+    },
+    "comment": "Ice Troll",
+    "npcId": 1564
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 2391,
+      "y": 10207
+    },
+    "comment": "Ice Troll",
+    "npcId": 1565
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 2383,
+      "y": 10208
+    },
+    "comment": "Ice Troll",
+    "npcId": 1566
+  }
+]

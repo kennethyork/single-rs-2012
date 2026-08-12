@@ -1,0 +1,541 @@
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+//  Copyright (C) 2021 Trenton Kress
+//  This file is part of project: Darkan
+//
+package com.rs.engine.quest.data;
+
+import com.rs.cache.ArchiveType;
+import com.rs.cache.Cache;
+import com.rs.cache.IndexType;
+import com.rs.engine.quest.Quest;
+import com.rs.game.model.entity.player.Player;
+import com.rs.game.model.entity.player.Skills;
+import com.rs.lib.io.InputStream;
+import com.rs.lib.util.Logger;
+import com.rs.lib.util.Utils;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.HashMap;
+
+/**
+ * @author Trenton
+ * Necking myself knowing that all of this was in the cache.
+ * Regretting hours of finding varbits by looping for all the quests.
+ */
+public class QuestDefinitions {
+
+	public enum Type {
+		NORMAL,
+		HOLIDAY;
+	}
+
+	public enum Difficulty {
+		NOVICE,
+		INTERMEDIATE,
+		EXPERIENCED,
+		MASTER,
+		GRANDMASTER,
+		SPECIAL;
+	}
+
+	public int id;
+	public String name;
+	public String sortName;
+	public boolean members;
+	public int[] _questPrerequisiteIds;
+	public int[][] _levelRequirements;
+	private QuestInformation extraInfo;
+	public int[][] varbitValues;
+	public int[][] varValues;
+	public Type type = Type.NORMAL;
+	public int questpointRequirement;
+	public int questpointReward;
+	public Difficulty difficulty = Difficulty.NOVICE;
+	public HashMap<Integer, Object> params;
+	public int graphicId;
+
+
+    public int[] anIntArray2601;
+
+    public static final HashMap<Integer, QuestDefinitions> QUESTS = new HashMap<>();
+	private static final HashMap<String, QuestDefinitions> QUESTS_NAME = new HashMap<>();
+
+	public static void main(String[] args) throws IOException {
+		//		Cache.init();
+		//		for (int i = 0;i < Cache.STORE.getIndex(IndexType.CONFIG).getValidFilesCount(ArchiveType.QUESTS.getId());i++) {
+		//			QuestDefinitions def = new QuestDefinitions(i);
+		//			//Logger.debug(def.name.toUpperCase().replace(" ", "_").replaceAll("[^A-Za-z0-9_]", "") + "(" + i + "),");
+		//			if (i == 0)
+		//				Logger.debug(def);
+		//		}
+	}
+
+	public QuestDefinitions() {
+
+	}
+
+	public QuestDefinitions(int id) {
+		this.id = id;
+		decode(new InputStream(Cache.STORE.getIndex(IndexType.CONFIG).getFile(ArchiveType.QUESTS.getId(), id)));
+	}
+
+	public static void init() {
+		QUESTS.clear();
+		QUESTS_NAME.clear();
+		for (int i = 0;i < Cache.STORE.getIndex(IndexType.CONFIG).getValidFilesCount(ArchiveType.QUESTS.getId());i++) {
+			QuestDefinitions def = new QuestDefinitions(i);
+			if (def != null) {
+				QUESTS.put(i, def);
+				QUESTS_NAME.put(def.name, def);
+			}
+		}
+
+		/*
+		 * Fix invalid values
+		 */
+		QuestDefinitions quest;
+
+		//buyers cellars
+		quest = QUESTS.get(174);
+		quest.varbitValues[0][0] = 7793;
+		quest.varbitValues[0][2] = 30;
+
+		//shield of arrav
+		quest = QUESTS.get(63);
+		quest.varValues[1][1] = 1;
+
+		//underground pass
+		quest = QUESTS.get(31);
+		quest.varValues[0][1] = 1;
+
+		//as a first resort
+		quest = QUESTS.get(41);
+		quest.varbitValues[0][1] = 10;
+
+		//workshop I
+		quest = QUESTS.get(8);
+		quest.varValues[0][1] = (1 << 1);
+		quest.varValues[0][2] = (1 << 20);
+
+		//fur n seek
+		quest = QUESTS.get(33);
+		quest.varbitValues[0][1] = 2;
+
+		//tai bwo wannai
+		quest = QUESTS.get(89);
+		quest.varValues[0][1] = 3;
+
+		//muspah
+		quest = QUESTS.get(18);
+		quest.varbitValues[0][1] = 10;
+
+		//deadliest catch
+		quest = QUESTS.get(191);
+		quest.varbitValues[0][2] = 50;
+
+		//workshop IV
+		quest = QUESTS.get(187);
+		quest.varbitValues[0][2] = 9;
+
+		//forgiveness of a chaos dwarf
+		quest = QUESTS.get(35);
+		quest.varbitValues[0][2] = 90;
+
+		//waterfall quest
+		quest = QUESTS.get(93);
+		quest.varValues[0][2] = 10;
+
+		//perils of ice mountain
+		quest = QUESTS.get(109);
+		quest.varbitValues[0][2] = 150;
+
+		//regicide
+		quest = QUESTS.get(100);
+		quest.varValues[0][2] = 15;
+
+		//rocking out
+		quest = QUESTS.get(4);
+		quest.varbitValues[0][2] = 100;
+
+		//spirit of summer
+		quest = QUESTS.get(14);
+		quest.varbitValues[0][2] = 100;
+
+		//Black knights fortress, wrong qp, for some reason it was 0
+		quest = QUESTS.get(53);
+		quest.questpointReward = 3;
+
+		//Gunnar's Ground - 0 in cache for some reason
+		quest = QUESTS.get(179);
+		quest.questpointReward = 5;
+
+		QUESTS.put(Quest.ANOTHER_COOKS_QUEST.getId(), new QuestDefinitions() {
+			{
+				this.id = Quest.ANOTHER_COOKS_QUEST.getId();
+				this.difficulty = Difficulty.NOVICE;
+				this.name = "Another Cook's Quest";
+				this.sortName = "Recipe for Disaster: Another Cook's Quest";
+				this.members = true;
+				this.setExtraInfo(new QuestInformation(id, "Another Cook's Quest", -1) {
+                    {
+						this.getSkillReq().put(Skills.COOKING, 10);
+						this.getPreReqs().add(Quest.COOKS_ASSISTANT);
+                    }
+                });
+				questpointReward = 1;
+			}
+		});
+
+		QUESTS.put(Quest.FREEING_MOUNTAIN_DWARF.getId(), new QuestDefinitions() {
+			{
+				this.id = Quest.FREEING_MOUNTAIN_DWARF.getId();
+				this.difficulty = Difficulty.INTERMEDIATE;
+				this.name = "Freeing the Mountain Dwarf";
+				this.sortName = "Recipe for Disaster: Freeing the Mountain Dwarf";
+				this.members = true;
+				this.setExtraInfo(new QuestInformation(id, "Freeing the Mountain Dwarf", -1) {
+					{
+						this.getPreReqs().add(Quest.FISHING_CONTEST);
+					}
+				});
+				questpointReward = 1;
+			}
+		});
+
+		QUESTS.put(Quest.FREEING_GOBLIN_GENERALS.getId(), new QuestDefinitions() {
+			{
+				this.id = Quest.FREEING_GOBLIN_GENERALS.getId();
+				this.difficulty = Difficulty.INTERMEDIATE;
+				this.name = "Freeing the Goblin generals";
+				this.sortName = "Recipe for Disaster: Freeing the Goblin generals";
+				this.members = true;
+				this.setExtraInfo(new QuestInformation(id, "Freeing the Goblin generals", -1) {
+					{
+						this.getPreReqs().add(Quest.GOBLIN_DIPLOMACY);
+					}
+				});
+				questpointReward = 1;
+			}
+		});
+
+		QUESTS.put(Quest.FREEING_PIRATE_PETE.getId(), new QuestDefinitions() {
+			{
+				this.id = Quest.FREEING_PIRATE_PETE.getId();
+				this.difficulty = Difficulty.INTERMEDIATE;
+				this.name = "Freeing Pirate Pete";
+				this.sortName = "Recipe for Disaster: Freeing Pirate Pete";
+				this.members = true;
+				this.setExtraInfo(new QuestInformation(id, "Freeing Pirate Pete", -1) {
+					{
+						this.getSkillReq().put(Skills.COOKING, 31);
+					}
+				});
+				questpointReward = 1;
+			}
+		});
+
+		QUESTS.put(Quest.FREEING_LUMBRIDGE_SAGE.getId(), new QuestDefinitions() {
+			{
+				this.id = Quest.FREEING_LUMBRIDGE_SAGE.getId();
+				this.difficulty = Difficulty.INTERMEDIATE;
+				this.name = "Freeing the Lumbridge Guide";
+				this.sortName = "Recipe for Disaster: Freeing the Lumbridge Guide";
+				this.members = true;
+				this.setExtraInfo(new QuestInformation(id, "Freeing the Lumbridge Guide", -1) {
+					{
+						this.getSkillReq().put(Skills.COOKING, 40);
+						this.getPreReqs().add(Quest.BIG_CHOMPY_BIRD_HUNTING);
+						this.getPreReqs().add(Quest.BIOHAZARD);
+						this.getPreReqs().add(Quest.DEMON_SLAYER);
+						this.getPreReqs().add(Quest.MURDER_MYSTERY);
+						this.getPreReqs().add(Quest.NATURE_SPIRIT);
+						this.getPreReqs().add(Quest.WITCHS_HOUSE);
+					}
+				});
+				questpointReward = 1;
+			}
+		});
+
+		QUESTS.put(Quest.FREEING_EVIL_DAVE.getId(), new QuestDefinitions() {
+			{
+				this.id = Quest.FREEING_EVIL_DAVE.getId();
+				this.difficulty = Difficulty.INTERMEDIATE;
+				this.name = "Freeing Evil Dave";
+				this.sortName = "Recipe for Disaster: Freeing Evil Dave";
+				this.members = true;
+				this.setExtraInfo(new QuestInformation(id, "Freeing Evil Dave", -1) {
+					{
+						this.getSkillReq().put(Skills.COOKING, 25);
+						this.getPreReqs().add(Quest.GERTRUDES_CAT);
+						this.getPreReqs().add(Quest.SHADOW_OF_STORM);
+					}
+				});
+				questpointReward = 1;
+			}
+		});
+
+		QUESTS.put(Quest.FREEING_SKRACH_UGLOGWEE.getId(), new QuestDefinitions() {
+			{
+				this.id = Quest.FREEING_SKRACH_UGLOGWEE.getId();
+				this.difficulty = Difficulty.INTERMEDIATE;
+				this.name = "Freeing Skrach Uglogwee";
+				this.sortName = "Recipe for Disaster: Freeing Skrach Uglogwee";
+				this.members = true;
+				this.setExtraInfo(new QuestInformation(id, "Freeing Skrach Uglogwee", -1) {
+					{
+						this.getSkillReq().put(Skills.COOKING, 41);
+						this.getSkillReq().put(Skills.FIREMAKING, 20);
+						this.getPreReqs().add(Quest.BIG_CHOMPY_BIRD_HUNTING);
+					}
+				});
+				questpointReward = 1;
+			}
+		});
+
+		QUESTS.put(Quest.FREEING_SIR_AMIK_VARZE.getId(), new QuestDefinitions() {
+			{
+				this.id = Quest.FREEING_SIR_AMIK_VARZE.getId();
+				this.difficulty = Difficulty.MASTER;
+				this.name = "Freeing Sir Amik Varze";
+				this.sortName = "Recipe for Disaster: Freeing Sir Amik Varze";
+				this.members = true;
+				this.questpointRequirement = 107;
+				this.setExtraInfo(new QuestInformation(id, "Freeing Sir Amik Varze", -1) {
+					{
+						this.setQpReq(107);
+						this.getPreReqs().add(Quest.FAMILY_CREST);
+						this.getPreReqs().add(Quest.HEROES_QUEST);
+						this.getPreReqs().add(Quest.SHILO_VILLAGE);
+						this.getPreReqs().add(Quest.UNDERGROUND_PASS);
+						this.getPreReqs().add(Quest.WATERFALL_QUEST);
+					}
+				});
+				questpointReward = 1;
+			}
+		});
+
+		QUESTS.put(Quest.FREEING_KING_AWOWOGEI.getId(), new QuestDefinitions() {
+			{
+				this.id = Quest.FREEING_KING_AWOWOGEI.getId();
+				this.difficulty = Difficulty.MASTER;
+				this.name = "Freeing King Awowogei";
+				this.sortName = "Recipe for Disaster: Freeing King Awowogei";
+				this.members = true;
+				this.setExtraInfo(new QuestInformation(id, "Freeing King Awowogei", -1) {
+					{
+						this.getSkillReq().put(Skills.COOKING, 70);
+						this.getSkillReq().put(Skills.AGILITY, 48);
+						this.getPreReqs().add(Quest.MONKEY_MADNESS);
+					}
+				});
+				questpointReward = 1;
+			}
+		});
+
+		QUESTS.put(Quest.DEFEATING_THE_CULINAROMANCER.getId(), new QuestDefinitions() {
+			{
+				this.id = Quest.DEFEATING_THE_CULINAROMANCER.getId();
+				this.difficulty = Difficulty.GRANDMASTER;
+				this.name = "Defeating the Culinaromancer";
+				this.sortName = "Recipe for Disaster: Defeating the Culinaromancer";
+				this.members = true;
+				this.questpointRequirement = 175;
+				this.setExtraInfo(new QuestInformation(id, "Defeating the Culinaromancer", -1) {
+					{
+						this.setQpReq(175);
+						this.getPreReqs().add(Quest.DESERT_TREASURE);
+						this.getPreReqs().add(Quest.HORROR_FROM_DEEP);
+					}
+				});
+				questpointReward = 1;
+			}
+		});
+	}
+
+	public static QuestDefinitions getQuestDefinitions(int id) {
+		return QUESTS.get(id);
+	}
+
+	public static QuestDefinitions getQuestDefinitions(String name) {
+		return QUESTS_NAME.get(name);
+	}
+
+	public void sendStarted(Player player) {
+		if (varValues != null)
+			for (int[] varValue : varValues)
+				player.getVars().setVar(varValue[0], varValue[1]);
+		if (varbitValues != null)
+			for (int[] varbitValue : varbitValues)
+				player.getVars().setVarBit(varbitValue[0], varbitValue[1]);
+	}
+
+	public void sendCompleted(Player player) {
+		if (varValues != null)
+			for (int[] varValue : varValues)
+				player.getVars().setVar(varValue[0], varValue[2]);
+		if (varbitValues != null)
+			for (int[] varbitValue : varbitValues)
+				player.getVars().setVarBit(varbitValue[0], varbitValue[2]);
+	}
+
+	public void decode(InputStream buffer) {
+		while (buffer.getRemaining() > 0) {
+			int opcode = buffer.readUnsignedByte();
+			if (opcode == 0)
+				break;
+			if (1 == opcode)
+				name = buffer.readJagString();
+			else if (2 == opcode)
+				sortName = buffer.readJagString();
+			else if (3 == opcode) {
+				int i_3_ = buffer.readUnsignedByte();
+				varValues = new int[i_3_][3];
+				for (int i_4_ = 0; i_4_ < i_3_; i_4_++) {
+					varValues[i_4_][0] = buffer.readUnsignedShort();
+					varValues[i_4_][1] = buffer.readInt();
+					varValues[i_4_][2] = buffer.readInt();
+				}
+			} else if (opcode == 4) {
+				int i_5_ = buffer.readUnsignedByte();
+				varbitValues = new int[i_5_][3];
+				for (int i_6_ = 0; i_6_ < i_5_; i_6_++) {
+					varbitValues[i_6_][0] = buffer.readUnsignedShort();
+					varbitValues[i_6_][1] = buffer.readInt();
+					varbitValues[i_6_][2] = buffer.readInt();
+				}
+			} else if (5 == opcode)
+				buffer.readShort();
+			else if (6 == opcode)
+				type = Type.values()[buffer.readUnsignedByte()];
+			else if (7 == opcode) {
+				int diff = buffer.readUnsignedByte();
+				if (diff == 250)
+					difficulty = Difficulty.SPECIAL;
+				else
+					difficulty = Difficulty.values()[diff];
+			} else if (opcode == 8)
+				members = true;
+			else if (opcode == 9)
+				questpointReward = buffer.readUnsignedByte();
+			else if (opcode == 10) {
+				int i_7_ = buffer.readUnsignedByte();
+				anIntArray2601 = new int[i_7_];
+				for (int i_8_ = 0; i_8_ < i_7_; i_8_++)
+					anIntArray2601[i_8_] = buffer.readInt();
+			} else if (12 == opcode)
+				buffer.readInt();
+			else if (opcode == 13) {
+				int i_9_ = buffer.readUnsignedByte();
+				_questPrerequisiteIds = new int[i_9_];
+				for (int i_10_ = 0; i_10_ < i_9_; i_10_++)
+					_questPrerequisiteIds[i_10_] = buffer.readUnsignedShort();
+			} else if (opcode == 14) {
+				int i_11_ = buffer.readUnsignedByte();
+				_levelRequirements = new int[i_11_][2];
+				for (int i_12_ = 0; i_12_ < i_11_; i_12_++) {
+					_levelRequirements[i_12_][0] = buffer.readUnsignedByte();
+					_levelRequirements[i_12_][1] = buffer.readUnsignedByte();
+				}
+			} else if (opcode == 15)
+				questpointRequirement = buffer.readUnsignedShort();
+			else if (opcode == 17)
+				graphicId = buffer.readBigSmart();
+			else if (18 == opcode) {
+				int i_13_ = buffer.readUnsignedByte();
+                int[] varpRequirements = new int[i_13_];
+                int[] minVarpValue = new int[i_13_];
+                int[] maxVarpValue = new int[i_13_];
+                /*
+                 * LITERAL JUNK NULL FOR EVERY QUEST
+                 */
+                String[] varpRequirementNames = new String[i_13_];
+				for (int i_14_ = 0; i_14_ < i_13_; i_14_++) {
+					varpRequirements[i_14_] = buffer.readInt();
+					minVarpValue[i_14_] = buffer.readInt();
+					maxVarpValue[i_14_] = buffer.readInt();
+					varpRequirementNames[i_14_] = buffer.readString();
+				}
+			} else if (19 == opcode) {
+				int i_15_ = buffer.readUnsignedByte();
+                int[] varBitRequirements = new int[i_15_];
+                int[] minVarBitValue = new int[i_15_];
+                int[] maxVarBitValue = new int[i_15_];
+                String[] varbitRequirementNames = new String[i_15_];
+				for (int i_16_ = 0; i_16_ < i_15_; i_16_++) {
+					varBitRequirements[i_16_] = buffer.readInt();
+					minVarBitValue[i_16_] = buffer.readInt();
+					maxVarBitValue[i_16_] = buffer.readInt();
+					varbitRequirementNames[i_16_] = buffer.readString();
+				}
+			} else if (249 == opcode) {
+				int count = buffer.readUnsignedByte();
+				if (null == params)
+					params = new HashMap<>(count);
+				for (int index = 0; index < count; index++) {
+					boolean stringVal = (buffer.readUnsignedByte()) == 1;
+					int key = buffer.read24BitInt();
+					Object value;
+					if (stringVal)
+						value = buffer.readString();
+					else
+						value = buffer.readInt();
+					params.put(key, value);
+				}
+			} else
+				Logger.error(QuestDefinitions.class, "decode", "Error unrecognized quest config code: {" + opcode + "}");
+		}
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder result = new StringBuilder();
+		String newLine = System.getProperty("line.separator");
+
+		result.append(this.getClass().getName());
+		result.append(" {");
+		result.append(newLine);
+
+		// determine fields declared in this class only (no fields of
+		// superclass)
+		Field[] fields = this.getClass().getDeclaredFields();
+
+		// print field names paired with their values
+		for (Field field : fields) {
+			if (Modifier.isStatic(field.getModifiers()))
+				continue;
+			result.append("  ");
+			try {
+				result.append(field.getType().getCanonicalName()).append(" ").append(field.getName()).append(": ");
+				result.append(Utils.getFieldValue(this, field));
+			} catch (Throwable ex) {
+				Logger.handleNoRecord(QuestDefinitions.class, "toString", "Error getting field info:" + field, ex);
+			}
+			result.append(newLine);
+		}
+		result.append("}");
+
+		return result.toString();
+	}
+
+	public QuestInformation getExtraInfo() {
+		return extraInfo;
+	}
+
+	public void setExtraInfo(QuestInformation extraInfo) {
+		this.extraInfo = extraInfo;
+	}
+}

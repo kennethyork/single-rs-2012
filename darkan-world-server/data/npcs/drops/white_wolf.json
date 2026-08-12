@@ -1,0 +1,24 @@
+{
+  "names": [
+    "White wolf"
+  ],
+  "tables": [
+    {
+      "chance": 0.0,
+      "outOf": 0.0,
+      "dropOne": false,
+      "drops": [
+        {
+          "id": 2859,
+          "min": 1,
+          "max": 1
+        },
+		{
+          "id": 23058,
+          "min": 1,
+          "max": 1
+        }
+      ]
+    }
+  ]
+}

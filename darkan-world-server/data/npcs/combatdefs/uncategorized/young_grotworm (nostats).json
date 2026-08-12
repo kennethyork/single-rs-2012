@@ -1,0 +1,23 @@
+{
+  "names": [
+    "Young grotworm"
+  ],
+  "attackAnim": 16777,
+  "attackSound": -1,
+  "defenceAnim": 16779,
+  "defendSound": -1,
+  "deathAnim": 16778,
+  "deathDelay": 4,
+  "deathSound": -1,
+  "respawnDelay": 29,
+  "hitpoints": 150,
+  "maxHit": 20,
+  "attackStyle": "MAGIC",
+  "attackRange": -1,
+  "attackGfx": 3162,
+  "attackProjectile": 3164,
+  "agressivenessType": "PASSIVE",
+  "aggroDistance": 8,
+  "deAggroDistance": -1,
+  "maxDistFromSpawn": -1
+}

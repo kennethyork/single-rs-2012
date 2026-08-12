@@ -1,0 +1,438 @@
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+//  Copyright (C) 2021 Trenton Kress
+//  This file is part of project: Darkan
+//
+package com.rs.game.model.entity.player.managers;
+
+import com.rs.engine.pathfinder.Direction;
+import com.rs.game.content.Potion;
+import com.rs.game.content.skills.cooking.Foods.Food;
+import com.rs.game.content.skills.magic.TeleType;
+import com.rs.game.model.entity.Entity;
+import com.rs.game.model.entity.Hit;
+import com.rs.game.model.entity.Teleport;
+import com.rs.game.model.entity.npc.NPC;
+import com.rs.game.model.entity.player.Controller;
+import com.rs.game.model.entity.player.Player;
+import com.rs.game.model.gameobject.GameObject;
+import com.rs.lib.game.GroundItem;
+import com.rs.lib.game.Item;
+import com.rs.lib.net.ClientPacket;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
+public final class ControllerManager {
+
+	private transient Player player;
+	private transient boolean inited;
+
+	private final transient Set<BiFunction<Player, Teleport, Boolean>> teleportHooks = new ObjectOpenHashSet<>();
+	private final transient Set<BiFunction<Player, Entity, Boolean>> keepCombatingHooks = new ObjectOpenHashSet<>();
+	private final transient Set<BiFunction<Player, Entity, Boolean>> canAttackHooks = new ObjectOpenHashSet<>();
+	private final transient Set<BiFunction<Player, Entity, Boolean>> canHitHooks = new ObjectOpenHashSet<>();
+	private final transient Set<Function<Player, Boolean>> deathHooks = new ObjectOpenHashSet<>();
+
+	private Controller controller;
+
+	public void setPlayer(Player player) {
+		this.player = player;
+	}
+
+	public Controller getController() {
+		return controller;
+	}
+
+	public void startController(Controller controller) {
+		if (controller != null)
+			forceStop();
+		this.controller = controller;
+		if (controller == null)
+			return;
+		controller.setPlayer(player);
+		controller.start();
+		inited = true;
+	}
+
+	public void login() {
+		if (controller == null) {
+			forceStop();
+			return;
+		}
+		controller.setPlayer(player);
+		if (controller.login())
+			forceStop();
+		else
+			inited = true;
+	}
+
+	public void logout() {
+		if (controller == null)
+			return;
+		if (controller.logout())
+			forceStop();
+	}
+
+	public boolean canMove(Direction dir) {
+		if (controller == null || !inited)
+			return true;
+		return controller.canMove(dir);
+	}
+
+	public boolean checkWalkStep(int lastX, int lastY, int nextX, int nextY) {
+		if (controller == null || !inited)
+			return true;
+		return controller.checkWalkStep(lastX, lastY, nextX, nextY);
+	}
+
+	public boolean keepCombating(Entity target) {
+		if (controller != null && inited)
+			return controller.keepCombating(target);
+		for (var keepCombatingHook : keepCombatingHooks) {
+			if (!keepCombatingHook.apply(player, target))
+				return false;
+		}
+		return true;
+	}
+
+	public boolean canEquip(int slotId, int itemId) {
+		if (controller == null || !inited)
+			return true;
+		return controller.canEquip(slotId, itemId);
+	}
+
+	public boolean canAddInventoryItem(int itemId, int amount) {
+		if (controller == null || !inited)
+			return true;
+		return controller.canAddInventoryItem(itemId, amount);
+	}
+
+	public void trackXP(int skillId, int addedXp) {
+		if (controller == null || !inited)
+			return;
+		controller.trackXP(skillId, addedXp);
+	}
+
+	public boolean gainXP(int skillId, double exp) {
+		if (controller == null || !inited)
+			return true;
+		return controller.gainXP(skillId, exp);
+	}
+
+	public boolean canDeleteInventoryItem(int itemId, int amount) {
+		if (controller == null || !inited)
+			return true;
+		return controller.canDeleteInventoryItem(itemId, amount);
+	}
+
+	public boolean canUseItemOnItem(Item itemUsed, Item usedWith) {
+		if (controller == null || !inited)
+			return true;
+		return controller.canUseItemOnItem(itemUsed, usedWith);
+	}
+
+	public boolean canAttack(Entity entity) {
+		if (controller != null && inited)
+			return controller.canAttack(entity);
+		for (var canAttackHook : canAttackHooks) {
+			if (!canAttackHook.apply(player, entity))
+				return false;
+		}
+		return true;
+	}
+
+	public boolean canPlayerOption1(Player target) {
+		if (controller == null || !inited)
+			return true;
+		return controller.canPlayerOption1(target);
+	}
+
+	public boolean canPlayerOption2(Player target) {
+		if (controller == null || !inited)
+			return true;
+		return controller.canPlayerOption2(target);
+	}
+
+	public boolean canPlayerOption3(Player target) {
+		if (controller == null || !inited)
+			return true;
+		return controller.canPlayerOption3(target);
+	}
+
+	public boolean canPlayerOption4(Player target) {
+		if (controller == null || !inited)
+			return true;
+		return controller.canPlayerOption4(target);
+	}
+
+	public boolean canHit(Entity entity) {
+		if (controller != null && inited)
+			return controller.canHit(entity);
+		for (var canHitHook : canHitHooks) {
+			if (!canHitHook.apply(player, entity))
+				return false;
+		}
+		return true;
+	}
+
+	public void moved() {
+		if (controller == null || !inited)
+			return;
+		controller.moved();
+	}
+
+	public boolean canTakeItem(GroundItem item) {
+		if (controller == null || !inited)
+			return true;
+		return controller.canTakeItem(item);
+	}
+
+	public void processNPCDeath(int id) {
+		if (controller == null || !inited)
+			return;
+		controller.processNPCDeath(id);
+	}
+
+	public void processOutgoingHit(Hit hit, Entity target) {
+		if (controller == null || !inited)
+			return;
+		controller.processOutgoingHit(hit, target);
+	}
+
+	public void processIncomingHit(Hit hit) {
+		if (controller == null || !inited)
+			return;
+		controller.processIncomingHit(hit);
+	}
+
+	public void processNPCDeath(NPC id) {
+		if (controller == null || !inited)
+			return;
+		controller.processNPCDeath(id.getId());
+		controller.processNPCDeath(id);
+	}
+
+	public void onTeleported(TeleType type) {
+		if (controller == null || !inited)
+			return;
+		controller.onTeleported(type);
+	}
+
+	public void sendInterfaces() {
+		if (controller == null || !inited)
+			return;
+		controller.sendInterfaces();
+	}
+
+	public void process() {
+		if (controller == null || !inited)
+			return;
+		controller.process();
+	}
+
+	public boolean sendDeath() {
+		if (controller != null && inited)
+			return controller.sendDeath();
+		for (var deathHook : deathHooks) {
+			if (deathHook.apply(player))
+				return false;
+		}
+		return true;
+	}
+
+	public boolean canDepositItem(Item item) {
+		if (controller == null || !inited)
+			return true;
+		return controller.canDepositItem(item);
+	}
+
+	public boolean canEat(Food food) {
+		if (controller == null || !inited)
+			return true;
+		return controller.canEat(food);
+	}
+
+	public boolean canPot(Potion pot) {
+		if (controller == null || !inited)
+			return true;
+		return controller.canPot(pot);
+	}
+
+	public boolean useDialogueScript(Object key) {
+		if (controller == null || !inited)
+			return true;
+		return controller.useDialogueScript(key);
+	}
+
+	public boolean processTeleport(Teleport tele) {
+		if (controller != null && inited)
+			return controller.processTeleport(tele);
+		for (var teleportHook : teleportHooks) {
+			if (!teleportHook.apply(player, tele))
+				return false;
+		}
+		return true;
+	}
+
+	public boolean processObjectClick1(GameObject object) {
+		if (controller == null || !inited)
+			return true;
+		return controller.processObjectClick1(object);
+	}
+
+	public boolean processButtonClick(int interfaceId, int componentId, int slotId, int slotId2, ClientPacket packet) {
+		if (controller == null || !inited)
+			return true;
+		return controller.processButtonClick(interfaceId, componentId, slotId, slotId2, packet);
+	}
+
+	public boolean processNPCClick1(NPC npc) {
+		if (controller == null || !inited)
+			return true;
+		return controller.processNPCClick1(npc);
+	}
+
+	public boolean canSummonFamiliar() {
+		if (controller == null || !inited)
+			return true;
+		return controller.canSummonFamiliar();
+	}
+
+	public boolean processNPCClick2(NPC npc) {
+		if (controller == null || !inited)
+			return true;
+		return controller.processNPCClick2(npc);
+	}
+
+	public boolean processNPCClick3(NPC npc) {
+		if (controller == null || !inited)
+			return true;
+		return controller.processNPCClick3(npc);
+	}
+
+	public boolean processObjectClick2(GameObject object) {
+		if (controller == null || !inited)
+			return true;
+		return controller.processObjectClick2(object);
+	}
+
+	public boolean processObjectClick3(GameObject object) {
+		if (controller == null || !inited)
+			return true;
+		return controller.processObjectClick3(object);
+	}
+
+	public boolean processItemOnNPC(NPC npc, Item item) {
+		if (controller == null || !inited)
+			return true;
+		return controller.processItemOnNPC(npc, item);
+	}
+
+	public boolean canDropItem(Item item) {
+		if (controller == null || !inited)
+			return true;
+		return controller.canDropItem(item);
+	}
+
+	public void forceStop() {
+		if (controller != null) {
+			controller.onRemove();
+			controller.forceClose();
+			controller = null;
+		}
+		inited = false;
+	}
+
+	public void removeControllerWithoutCheck() {
+		if (controller != null)
+			controller.onRemove();
+		controller = null;
+		inited = false;
+	}
+
+	public boolean processObjectClick4(GameObject object) {
+		if (controller == null || !inited)
+			return true;
+		return controller.processObjectClick4(object);
+	}
+
+	public boolean processObjectClick5(GameObject object) {
+		if (controller == null || !inited)
+			return true;
+		return controller.processObjectClick5(object);
+	}
+
+	public boolean processItemOnPlayer(Player p2, Item item, int slot) {
+		if (controller == null || !inited)
+			return true;
+		return controller.processItemOnPlayer(p2, item, slot);
+	}
+
+	public boolean handleItemOnObject(GameObject object, Item item) {
+		if (controller == null || !inited)
+			return true;
+		return controller.processItemOnObject(object, item);
+	}
+
+	public boolean canTrade() {
+		if (controller == null || !inited)
+			return true;
+		return controller.canTrade();
+	}
+
+	public boolean isIn(Class<?> type) {
+		if (controller == null)
+			return false;
+		return controller.getClass().isAssignableFrom(type);
+	}
+	
+	/**
+	 * Very unsafe to use this. Do not please.
+	 * @param controller
+	 */
+	@Deprecated
+	public void setController(Controller controller) {
+		this.controller = controller;
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T extends Controller> T getController(Class<T> clazz) {
+		if (controller == null || !controller.getClass().isAssignableFrom(clazz))
+			return null;
+		return (T) controller;
+	}
+
+	public void addTeleportHook(BiFunction<Player, Teleport, Boolean> func) {
+		teleportHooks.add(func);
+	}
+
+	public void addCanAttackHook(BiFunction<Player, Entity, Boolean> func) {
+		canAttackHooks.add(func);
+	}
+
+	public void addKeepFightingHook(BiFunction<Player, Entity, Boolean> func) {
+		keepCombatingHooks.add(func);
+	}
+
+	public void addCanHitHook(BiFunction<Player, Entity, Boolean> func) {
+		canHitHooks.add(func);
+	}
+
+	public void addDeathHook(Function<Player, Boolean> func) {
+		deathHooks.add(func);
+	}
+}

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Darkan
+Comment=A high quality 2012 Runescape emulation.
+Exec=darkan
+Icon=darkan
+Terminal=false
+Type=Application
+Categories=Game;

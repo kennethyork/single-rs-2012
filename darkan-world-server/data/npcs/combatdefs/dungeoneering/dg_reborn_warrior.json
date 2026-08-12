@@ -1,0 +1,33 @@
+{
+  "ids": [
+    12941,
+    12942,
+    12943,
+    12944,
+    12945,
+    12946,
+    12947,
+    12948,
+    12949,
+    12950,
+    12951
+  ],
+  "attackAnim": 11116,
+  "attackSound": -1,
+  "defenceAnim": 11117,
+  "defendSound": -1,
+  "deathAnim": 11120,
+  "deathDelay": 6,
+  "deathSound": -1,
+  "respawnDelay": 39,
+  "hitpoints": 1,
+  "maxHit": 1,
+  "attackStyle": "MELEE",
+  "attackRange": -1,
+  "attackGfx": -1,
+  "attackProjectile": -1,
+  "agressivenessType": "AGGRESSIVE",
+  "aggroDistance": 4,
+  "deAggroDistance": -1,
+  "maxDistFromSpawn": -1
+}

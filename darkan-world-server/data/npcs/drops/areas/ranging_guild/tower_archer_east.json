@@ -1,0 +1,17 @@
+{
+  "ids": [689],
+  "tables": [
+    {
+      "chance": 1.0,
+      "outOf": 8.333,
+      "dropOne": false,
+      "drops": [
+        {
+          "id": 886,
+          "min": 1,
+          "max": 1
+        }
+      ]
+    }
+  ]
+}

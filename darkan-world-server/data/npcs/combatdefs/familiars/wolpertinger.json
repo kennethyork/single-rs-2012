@@ -1,0 +1,30 @@
+{
+  "names": [
+    "Wolpertinger"
+  ],
+  "attackAnim": 8303,
+  "attackSound": -1,
+  "defenceAnim": 8304,
+  "defendSound": -1,
+  "deathAnim": 8305,
+  "deathDelay": 8,
+  "deathSound": -1,
+  "respawnDelay": 0,
+  "hitpoints": 6510,
+  "maxHit": 224,
+  "attackStyle": "MAGIC",
+  "combatLevels": {
+    "ATTACK": 85,
+    "RANGE": 85,
+    "STRENGTH": 35,
+    "DEFENSE": 72,
+    "MAGE": 85
+  },
+  "attackRange": 7,
+  "attackGfx": -1,
+  "attackProjectile": 2733,
+  "agressivenessType": "PASSIVE",
+  "aggroDistance": 4,
+  "deAggroDistance": -1,
+  "maxDistFromSpawn": -1
+}

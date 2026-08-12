@@ -1,0 +1,20 @@
+# Local player data
+saves/
+
+# RuneScape cache and native client files are distributed only with releases
+darkan-cache/main_file_cache.*
+darkan-cache/*.dll
+
+# Build products and local toolchains
+**/build/
+**/.gradle/
+**/.gradle-user-home/
+**/.jdk24/
+*.class
+*.jar
+
+# IDE and operating-system files
+.idea/
+.vscode/
+*.iml
+.DS_Store

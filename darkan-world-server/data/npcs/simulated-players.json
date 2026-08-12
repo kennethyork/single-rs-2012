@@ -1,0 +1,41 @@
+{
+  "enabled": true,
+  "bots": [],
+  "companions": {
+    "enabled": true,
+    "maxPerPlayer": 4,
+    "followDistance": 10,
+    "countForDungeoneeringDifficulty": true
+  },
+  "economy": {
+    "enabled": true,
+    "intervalMinutes": 5,
+    "fillChancePercent": 35,
+    "maxUnitsPerOffer": 100,
+    "minimumGuidePricePercent": 50,
+    "maximumGuidePricePercent": 200
+  },
+  "regions": [
+    { "name": "Lumbridge", "x": 3222, "y": 3218, "plane": 0, "radius": 18, "count": 16, "mode": "SOCIAL", "minCombatLevel": 3, "maxCombatLevel": 70 },
+    { "name": "Varrock", "x": 3210, "y": 3424, "plane": 0, "radius": 28, "count": 18, "mode": "SOCIAL", "minCombatLevel": 10, "maxCombatLevel": 100 },
+    { "name": "Grand Exchange", "x": 3164, "y": 3487, "plane": 0, "radius": 14, "count": 18, "mode": "SOCIAL", "minCombatLevel": 20, "maxCombatLevel": 138 },
+    { "name": "Falador", "x": 2964, "y": 3378, "plane": 0, "radius": 25, "count": 14, "mode": "SOCIAL", "minCombatLevel": 15, "maxCombatLevel": 110 },
+    { "name": "Draynor", "x": 3093, "y": 3244, "plane": 0, "radius": 18, "count": 10, "mode": "SOCIAL", "minCombatLevel": 3, "maxCombatLevel": 80 },
+    { "name": "Al Kharid", "x": 3293, "y": 3174, "plane": 0, "radius": 20, "count": 10, "mode": "SOCIAL", "minCombatLevel": 5, "maxCombatLevel": 90 },
+    { "name": "Edgeville", "x": 3094, "y": 3493, "plane": 0, "radius": 15, "count": 12, "mode": "SOCIAL", "minCombatLevel": 40, "maxCombatLevel": 138 },
+    { "name": "Seers Village", "x": 2725, "y": 3491, "plane": 0, "radius": 22, "count": 10, "mode": "SOCIAL", "minCombatLevel": 30, "maxCombatLevel": 120 },
+    { "name": "Catherby", "x": 2808, "y": 3435, "plane": 0, "radius": 18, "count": 10, "mode": "SOCIAL", "minCombatLevel": 20, "maxCombatLevel": 110 },
+    { "name": "Ardougne", "x": 2662, "y": 3305, "plane": 0, "radius": 30, "count": 16, "mode": "SOCIAL", "minCombatLevel": 30, "maxCombatLevel": 138 },
+    { "name": "Yanille", "x": 2606, "y": 3093, "plane": 0, "radius": 18, "count": 8, "mode": "SOCIAL", "minCombatLevel": 40, "maxCombatLevel": 130 },
+    { "name": "Taverley", "x": 2894, "y": 3450, "plane": 0, "radius": 20, "count": 10, "mode": "SOCIAL", "minCombatLevel": 10, "maxCombatLevel": 100 },
+    { "name": "Burthorpe", "x": 2898, "y": 3544, "plane": 0, "radius": 20, "count": 10, "mode": "SOCIAL", "minCombatLevel": 3, "maxCombatLevel": 90 },
+    { "name": "Canifis", "x": 3505, "y": 3485, "plane": 0, "radius": 18, "count": 8, "mode": "SOCIAL", "minCombatLevel": 50, "maxCombatLevel": 138 },
+    { "name": "Rellekka", "x": 2660, "y": 3658, "plane": 0, "radius": 22, "count": 8, "mode": "SOCIAL", "minCombatLevel": 50, "maxCombatLevel": 138 },
+    { "name": "Karamja", "x": 2925, "y": 3175, "plane": 0, "radius": 24, "count": 8, "mode": "SOCIAL", "minCombatLevel": 10, "maxCombatLevel": 100 },
+    { "name": "Daemonheim", "x": 3449, "y": 3725, "plane": 0, "radius": 24, "count": 12, "mode": "SOCIAL", "minCombatLevel": 40, "maxCombatLevel": 138 },
+    { "name": "Wilderness South", "x": 3105, "y": 3545, "plane": 0, "radius": 30, "count": 24, "mode": "PK", "minCombatLevel": 20, "maxCombatLevel": 138 },
+    { "name": "Wilderness West", "x": 3035, "y": 3650, "plane": 0, "radius": 45, "count": 20, "mode": "PK", "minCombatLevel": 40, "maxCombatLevel": 138 },
+    { "name": "Wilderness East", "x": 3270, "y": 3670, "plane": 0, "radius": 45, "count": 20, "mode": "PK", "minCombatLevel": 40, "maxCombatLevel": 138 },
+    { "name": "Wilderness North", "x": 3150, "y": 3850, "plane": 0, "radius": 60, "count": 24, "mode": "PK", "minCombatLevel": 70, "maxCombatLevel": 138 }
+  ]
+}

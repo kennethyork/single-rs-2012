@@ -1,0 +1,24 @@
+{
+  "name": "Player Marketplace",
+  "generalStore": true,
+  "buyOnly": false,
+  "currency": 995,
+  "items": [
+    { "item": { "id": 1511, "amount": 500 }, "restockTicks": 25 },
+    { "item": { "id": 1521, "amount": 250 }, "restockTicks": 50 },
+    { "item": { "id": 453, "amount": 500 }, "restockTicks": 25 },
+    { "item": { "id": 440, "amount": 250 }, "restockTicks": 50 },
+    { "item": { "id": 436, "amount": 500 }, "restockTicks": 25 },
+    { "item": { "id": 438, "amount": 500 }, "restockTicks": 25 },
+    { "item": { "id": 317, "amount": 250 }, "restockTicks": 50 },
+    { "item": { "id": 335, "amount": 150 }, "restockTicks": 75 },
+    { "item": { "id": 379, "amount": 100 }, "restockTicks": 100 },
+    { "item": { "id": 554, "amount": 5000 }, "restockTicks": 10 },
+    { "item": { "id": 555, "amount": 5000 }, "restockTicks": 10 },
+    { "item": { "id": 556, "amount": 5000 }, "restockTicks": 10 },
+    { "item": { "id": 557, "amount": 5000 }, "restockTicks": 10 },
+    { "item": { "id": 558, "amount": 5000 }, "restockTicks": 10 },
+    { "item": { "id": 562, "amount": 2000 }, "restockTicks": 25 }
+  ],
+  "npcIds": [4336]
+}

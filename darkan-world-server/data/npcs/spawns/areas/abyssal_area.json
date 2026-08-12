@@ -1,0 +1,353 @@
+[
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3060,
+      "y": 4883
+    },
+    "comment": "Abyssal demon",
+    "npcId": 1615
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3046,
+      "y": 4874
+    },
+    "comment": "Abyssal demon",
+    "npcId": 1615
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3024,
+      "y": 4877
+    },
+    "comment": "Abyssal demon",
+    "npcId": 1615
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3016,
+      "y": 4891
+    },
+    "comment": "Abyssal demon",
+    "npcId": 1615
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3035,
+      "y": 4883
+    },
+    "comment": "Abyssal demon",
+    "npcId": 1615
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3046,
+      "y": 4886
+    },
+    "comment": "Abyssal demon",
+    "npcId": 1615
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3054,
+      "y": 4891
+    },
+    "comment": "Abyssal demon",
+    "npcId": 1615
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3029,
+      "y": 4899
+    },
+    "comment": "Abyssal demon",
+    "npcId": 1615
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3036,
+      "y": 4905
+    },
+    "comment": "Abyssal demon",
+    "npcId": 1615
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3019,
+      "y": 4901
+    },
+    "comment": "Abyssal demon",
+    "npcId": 1615
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3025,
+      "y": 4916
+    },
+    "comment": "Abyssal demon",
+    "npcId": 1615
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3050,
+      "y": 4918
+    },
+    "comment": "Abyssal demon",
+    "npcId": 1615
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3056,
+      "y": 4908
+    },
+    "comment": "Abyssal demon",
+    "npcId": 1615
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3060,
+      "y": 4880
+    },
+    "comment": "Abyssal leech",
+    "npcId": 2263
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3020,
+      "y": 4877
+    },
+    "comment": "Abyssal leech",
+    "npcId": 2263
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3040,
+      "y": 4870
+    },
+    "comment": "Abyssal leech",
+    "npcId": 2263
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3030,
+      "y": 4876
+    },
+    "comment": "Abyssal leech",
+    "npcId": 2263
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3050,
+      "y": 4873
+    },
+    "comment": "Abyssal leech",
+    "npcId": 2263
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3035,
+      "y": 4908
+    },
+    "comment": "Abyssal leech",
+    "npcId": 2263
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3018,
+      "y": 4902
+    },
+    "comment": "Abyssal leech",
+    "npcId": 2263
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3018,
+      "y": 4909
+    },
+    "comment": "Abyssal leech",
+    "npcId": 2263
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3021,
+      "y": 4918
+    },
+    "comment": "Abyssal leech",
+    "npcId": 2263
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3029,
+      "y": 4917
+    },
+    "comment": "Abyssal leech",
+    "npcId": 2263
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3046,
+      "y": 4916
+    },
+    "comment": "Abyssal leech",
+    "npcId": 2263
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3064,
+      "y": 4900
+    },
+    "comment": "Abyssal leech",
+    "npcId": 2263
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3056,
+      "y": 4912
+    },
+    "comment": "Abyssal leech",
+    "npcId": 2263
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3063,
+      "y": 4886
+    },
+    "comment": "Abyssal walker",
+    "npcId": 2265
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3032,
+      "y": 4872
+    },
+    "comment": "Abyssal walker",
+    "npcId": 2265
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3031,
+      "y": 4888
+    },
+    "comment": "Abyssal walker",
+    "npcId": 2265
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3043,
+      "y": 4902
+    },
+    "comment": "Abyssal walker",
+    "npcId": 2265
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3031,
+      "y": 4901
+    },
+    "comment": "Abyssal walker",
+    "npcId": 2265
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3020,
+      "y": 4914
+    },
+    "comment": "Abyssal walker",
+    "npcId": 2265
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3061,
+      "y": 4915
+    },
+    "comment": "Abyssal walker",
+    "npcId": 2265
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3044,
+      "y": 4883
+    },
+    "comment": "Abyssal guardian",
+    "npcId": 2264
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3020,
+      "y": 4895
+    },
+    "comment": "Abyssal guardian",
+    "npcId": 2264
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3052,
+      "y": 4898
+    },
+    "comment": "Abyssal guardian",
+    "npcId": 2264
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3038,
+      "y": 4907
+    },
+    "comment": "Abyssal guardian",
+    "npcId": 2264
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3028,
+      "y": 4914
+    },
+    "comment": "Abyssal guardian",
+    "npcId": 2264
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3057,
+      "y": 4907
+    },
+    "comment": "Abyssal guardian",
+    "npcId": 2264
+  }
+]

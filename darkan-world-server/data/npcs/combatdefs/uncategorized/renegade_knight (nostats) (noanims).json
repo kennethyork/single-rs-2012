@@ -1,0 +1,30 @@
+{
+  "names": [
+    "Renegade Knight"
+  ],
+  "attackAnim": 6896,
+  "attackSound": -1,
+  "defenceAnim": 388,
+  "defendSound": -1,
+  "deathAnim": 6897,
+  "deathDelay": 6,
+  "deathSound": -1,
+  "respawnDelay": 59,
+  "hitpoints": 490,
+  "maxHit": 75,
+  "attackStyle": "MELEE",
+  "combatLevels": {
+    "ATTACK": 25,
+    "RANGE": 25,
+    "STRENGTH": 25,
+    "DEFENSE": 25,
+    "MAGE": 25
+  },
+  "attackRange": -1,
+  "attackGfx": -1,
+  "attackProjectile": -1,
+  "agressivenessType": "AGGRESSIVE",
+  "aggroDistance": 4,
+  "deAggroDistance": -1,
+  "maxDistFromSpawn": -1
+}

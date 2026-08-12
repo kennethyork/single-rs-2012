@@ -1,0 +1,95 @@
+{
+  "names": [
+    "Infested axe"
+  ],
+  "tables": [
+    {
+      "chance": 17.0, "outOf": 128.0,
+      "rollTable": "herb"
+    },
+    {
+      "chance": 0.0,
+      "outOf": 0.0,
+      "dropOne": false,
+      "drops": [
+        {
+          "id": 22445,
+          "min": 1,
+          "max": 2
+        }
+      ]
+    },
+    {
+      "chance": 29.0,
+      "outOf": 128.0,
+      "dropOne": false,
+      "drops": [
+        {
+          "id": 562,
+          "min": 5,
+          "max": 15
+        }
+      ]
+    },
+    {
+      "chance": 25.0,
+      "outOf": 128.0,
+      "dropOne": false,
+      "drops": [
+        {
+          "id": 3139,
+          "min": 1,
+          "max": 1
+        }
+      ]
+    },
+    {
+      "chance": 13.0,
+      "outOf": 128.0,
+      "dropOne": false,
+      "drops": [
+        {
+          "id": 22446,
+          "min": 1,
+          "max": 1
+        }
+      ]
+    },
+    {
+      "chance": 13.0,
+      "outOf": 128.0,
+      "dropOne": false,
+      "drops": [
+        {
+          "id": 22448,
+          "min": 1,
+          "max": 80
+        }
+      ]
+    },
+    {
+      "chance": 11.0,
+      "outOf": 128.0,
+      "dropOne": false,
+      "drops": [
+        {
+          "id": 22449,
+          "min": 1,
+          "max": 50
+        }
+      ]
+    },
+    {
+      "chance": 20.0,
+      "outOf": 128.0,
+      "dropOne": false,
+      "drops": [
+        {
+          "id": 1939,
+          "min": 3,
+          "max": 11
+        }
+      ]
+    }
+  ]
+}

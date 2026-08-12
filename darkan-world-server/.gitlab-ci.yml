@@ -1,0 +1,39 @@
+image: eclipse-temurin:24.0.1_9-jdk-alpine
+
+stages:
+  - build
+  - deploy
+
+# Cache is based on whether settings.gradle/build.gradle changes
+# This executes per job first
+default:
+  cache:
+    key:
+      files:
+        - settings.gradle.kts
+        - build.gradle.kts
+    policy: pull-push
+    paths:
+      - .gradle
+  before_script:
+    - export GRADLE_USER_HOME="$(pwd)/.gradle"
+
+# Build and output artifacts (tag agnostic for simplicity)
+build:
+  stage: build
+  script:
+    - echo "Building java project..."
+    - ./gradlew assemble --build-cache --parallel --max-workers=$(nproc)
+  artifacts:
+    paths:
+      - build/libs
+
+# Deploy
+deploy:
+  stage: deploy
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "master"'
+  script:
+    - echo "Deploying build artifacts..."
+    - ./gradlew publish --parallel --max-workers=$(nproc)
+  environment: production

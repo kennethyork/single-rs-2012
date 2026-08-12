@@ -1,0 +1,101 @@
+[
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3316,
+      "y": 9612
+    },
+    "comment": "Mistag",
+    "npcId": 2084
+  },
+  {
+    "tile": {
+      "plane": 0,
+	  "x": 3231,
+      "y": 9609
+    },
+    "comment": "Kazgar",
+    "npcId": 2085
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3323,
+      "y": 9644
+    },
+    "comment": "Cave goblin guard",
+    "npcId": 2073
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3314,
+      "y": 9630
+    },
+    "comment": "Cave goblin guard",
+    "npcId": 2074
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3313,
+      "y": 9630
+    },
+    "comment": "Cave goblin miner",
+    "npcId": 2075
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3313,
+      "y": 9654
+    },
+    "comment": "Cave goblin miner",
+    "npcId": 2075
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3313,
+      "y": 9638
+    },
+    "comment": "Cave goblin miner",
+    "npcId": 2076
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3314,
+      "y": 9647
+    },
+    "comment": "Cave goblin miner",
+    "npcId": 2076
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3313,
+      "y": 9629
+    },
+    "comment": "Cave goblin miner",
+    "npcId": 2078
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3312,
+      "y": 9646
+    },
+    "comment": "Cave goblin miner",
+    "npcId": 2078
+  },
+  {
+    "tile": {
+      "plane": 0,
+      "x": 3323,
+      "y": 9608
+    },
+    "comment": "Nardok",
+    "npcId": 4312
+  }
+]

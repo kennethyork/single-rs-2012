@@ -1,0 +1,123 @@
+[
+  {
+    "comment": "Portal",
+    "objectId": 2273,
+    "type": 10,
+    "rotation": 0,
+    "tile": {
+      "x": 2919,
+      "y": 4852,
+      "plane": 0
+    }
+  },
+  {
+    "comment": "Portal",
+    "objectId": 2273,
+    "type": 10,
+    "rotation": 0,
+    "tile": {
+      "x": 2934,
+      "y": 4818,
+      "plane": 0
+    }
+  },
+  {
+    "comment": "Portal",
+    "objectId": 2273,
+    "type": 10,
+    "rotation": 0,
+    "tile": {
+      "x": 2927,
+      "y": 4827,
+      "plane": 0
+    }
+  },
+  {
+    "comment": "Portal",
+    "objectId": 2273,
+    "type": 10,
+    "rotation": 0,
+    "tile": {
+      "x": 2892,
+      "y": 4826,
+      "plane": 0
+    }
+  },
+  {
+    "comment": "Portal",
+    "objectId": 2273,
+    "type": 10,
+    "rotation": 0,
+    "tile": {
+      "x": 2899,
+      "y": 4858,
+      "plane": 0
+    }
+  },
+  {
+    "comment": "Portal",
+    "objectId": 2273,
+    "type": 10,
+    "rotation": 0,
+    "tile": {
+      "x": 2886,
+      "y": 4849,
+      "plane": 0
+    }
+  },
+  {
+    "comment": "Bandage table safe portal clan wars",
+    "objectId": 42023,
+    "type": 10,
+    "rotation": 0,
+    "tile": {
+      "x": 2818,
+      "y": 5509,
+      "plane": 0
+    }
+  },
+  {
+    "comment": "Bandage table blue respawn soul wars",
+    "objectId": 42023,
+    "type": 10,
+    "rotation": 1,
+    "tile": {
+      "x": 1816,
+      "y": 3221,
+      "plane": 0
+    }
+  },
+  {
+    "comment": "Bandage table red respawn soul wars",
+    "objectId": 42023,
+    "type": 10,
+    "rotation": 3,
+    "tile": {
+      "x": 1958,
+      "y": 3235,
+      "plane": 0
+    }
+  },
+  {
+    "comment": "Bandage table east respawn soul wars",
+    "objectId": 42023,
+    "type": 10,
+    "rotation": 0,
+    "tile": {
+      "x": 1932,
+      "y": 3246,
+      "plane": 0
+    }
+  },
+  {
+    "comment": "Bandage table west respawn soul wars",
+    "objectId": 42023,
+    "type": 10,
+    "rotation": 2,
+    "tile": {
+      "x": 1841,
+      "y": 3217,
+      "plane": 0
+    }
+  }
+]

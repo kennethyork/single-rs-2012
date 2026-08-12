@@ -1,0 +1,22 @@
+package com.rs.game.content.world.areas.karamja.npcs;
+
+import com.rs.engine.dialogue.Dialogue;
+import com.rs.engine.dialogue.HeadE;
+import com.rs.game.content.achievements.AchievementSystemD;
+import com.rs.game.content.achievements.SetReward;
+import com.rs.game.model.entity.player.Player;
+import com.rs.plugin.annotations.PluginEventHandler;
+import com.rs.plugin.handlers.NPCClickHandler;
+
+@PluginEventHandler
+public class JungleForester {
+
+	public static NPCClickHandler handleJungleForesters = new NPCClickHandler(new Object[] { 401, 402 }, new String[] { "Talk-to" }, e -> {
+		Player player = e.getPlayer();
+		int npcId = e.getNPC().getId();
+		player.startConversation(new Dialogue()
+				.addNPC(npcId, HeadE.CHEERFUL, "Hello, what are you after?")
+				.addOptions("What would you like to say?", (ops) -> ops.option("About the Achievement System...", () -> new AchievementSystemD(player, npcId, SetReward.KARAMJA_GLOVES))));
+	});
+
+}

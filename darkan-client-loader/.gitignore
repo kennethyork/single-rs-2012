@@ -1,0 +1,128 @@
+# Ignore Gradle project-specific cache directory
+.gradle
+/jre/
+/winjdk/
+/osxjdk/
+
+# Ignore Gradle build output directory
+build
+
+# eclipse specific
+*.pydevproject
+.project
+.metadata
+bin/**
+tmp/**
+tmp/**/*
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.classpath
+.settings/
+.loadpath
+
+# External tool builders
+.externalToolBuilders/
+
+# Locally stored "Eclipse launch configurations"
+*.launch
+
+# Created by https://www.gitignore.io/api/intellij
+
+### Intellij ###
+# Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and Webstorm
+# Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
+
+# User-specific stuff:
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries
+.idea/vcs.xml
+.idea/jsLibraryMappings.xml
+
+# Sensitive or high-churn files:
+.idea/dataSources.ids
+.idea/dataSources.xml
+.idea/dataSources.local.xml
+.idea/sqlDataSources.xml
+.idea/dynamic.xml
+.idea/uiDesigner.xml
+
+# Gradle:
+.idea/gradle.xml
+.idea/libraries
+
+# Mongo Explorer plugin:
+.idea/mongoSettings.xml
+
+## File-based project format:
+*.iws
+
+## Plugin-specific files:
+
+# IntelliJ
+/out/
+
+# mpeltonen/sbt-idea plugin
+.idea_modules/
+
+# JIRA plugin
+atlassian-ide-plugin.xml
+
+# Crashlytics plugin (for Android Studio and IntelliJ)
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+
+### Intellij Patch ###
+# Comment Reason: https://github.com/joeblau/gitignore.io/issues/186#issuecomment-215987721
+
+# *.iml
+# modules.xml
+
+bin/
+.settings/
+.idea/
+target/
+.project
+*.iml
+/.gradle/
+.vscode/
+darkan*.snap
+
+target
+nbactions.xml
+nb-configuration.xml
+/nbproject/
+project.properties
+*.iml
+.idea/
+.project
+.settings/
+.classpath
+dependency-reduced-pom.xml
+*.exe
+*.tar.gz
+packr.jar
+native-linux/
+native-osx/
+native-win32/
+native-win64/
+osx-jdk/
+linux-jdk/
+win32-jdk
+win64-jdk
+node_modules/
+.gradle
+build
+vcredist_x64.exe
+vcredist_x86.exe
+appimagetool-x86_64.AppImage
+*.dmg
+.DS_Store
+*.zip
+._*-jre
+packr_runelite-*.jar

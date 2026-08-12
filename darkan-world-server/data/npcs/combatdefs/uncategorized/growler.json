@@ -1,0 +1,30 @@
+{
+  "names": [
+    "Growler"
+  ],
+  "attackAnim": 7019,
+  "attackSound": -1,
+  "defenceAnim": 7017,
+  "defendSound": -1,
+  "deathAnim": 7016,
+  "deathDelay": 4,
+  "deathSound": -1,
+  "respawnDelay": 149,
+  "hitpoints": 1460,
+  "maxHit": 160,
+  "attackStyle": "MAGIC",
+  "combatLevels": {
+    "ATTACK": 100,
+    "RANGE": 1,
+    "STRENGTH": 101,
+    "DEFENSE": 120,
+    "MAGE": 150
+  },
+  "attackRange": -1,
+  "attackGfx": 1184,
+  "attackProjectile": 1227,
+  "agressivenessType": "AGGRESSIVE",
+  "aggroDistance": 64,
+  "deAggroDistance": -1,
+  "maxDistFromSpawn": -1
+}

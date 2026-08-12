@@ -1,0 +1,30 @@
+{
+  "names": [
+    "Bark Blamish Snail"
+  ],
+  "attackAnim": 8143,
+  "attackSound": -1,
+  "defenceAnim": 8145,
+  "defendSound": -1,
+  "deathAnim": 8144,
+  "deathDelay": 6,
+  "deathSound": -1,
+  "respawnDelay": 59,
+  "hitpoints": 90,
+  "maxHit": 1,
+  "attackStyle": "RANGE",
+  "combatLevels": {
+    "ATTACK": 0,
+    "RANGE": 10,
+    "STRENGTH": 0,
+    "DEFENSE": 20,
+    "MAGE": 1
+  },
+  "attackRange": 0,
+  "attackGfx": -1,
+  "attackProjectile": -1,
+  "agressivenessType": "PASSIVE",
+  "aggroDistance": 4,
+  "deAggroDistance": -1,
+  "maxDistFromSpawn": -1
+}

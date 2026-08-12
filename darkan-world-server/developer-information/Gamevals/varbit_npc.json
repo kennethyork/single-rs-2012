@@ -1,0 +1,13 @@
+{
+  "revision": 727,
+  "source": "legacy revision-727 cache + modern gameval catalog + validated structural/semantic/CS2 crosswalks",
+  "date": "2012-07",
+  "name_provenance": "validated structural, semantic, and CS2 legacy-to-later ID crosswalk",
+  "coverage": {
+    "cache_ids": 448,
+    "named_entries": 0,
+    "catalog_revision": 947
+  },
+  "limitation": "Only evidence-backed mappings are named. Unmapped variable IDs are intentionally omitted; same-number matching is unsafe because variable IDs are relocated and reused.",
+  "entries": {}
+}

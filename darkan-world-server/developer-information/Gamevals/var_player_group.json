@@ -1,0 +1,13 @@
+{
+  "revision": 727,
+  "source": "legacy revision-727 cache + modern gameval catalog + validated structural/semantic/CS2 crosswalks",
+  "date": "2012-07",
+  "name_provenance": "unavailable from revision-727 cache",
+  "coverage": {
+    "cache_ids": 0,
+    "named_entries": 0,
+    "catalog_revision": 947
+  },
+  "limitation": "No equivalent developer-name table or safely mappable 727 ID family was found.",
+  "entries": {}
+}

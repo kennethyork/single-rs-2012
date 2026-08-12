@@ -1,0 +1,30 @@
+{
+  "ids": [
+    691
+  ],
+  "attackAnim": 426,
+  "attackSound": -1,
+  "defenceAnim": 424,
+  "defendSound": -1,
+  "deathAnim": 836,
+  "deathDelay": 6,
+  "deathSound": -1,
+  "respawnDelay": 59,
+  "hitpoints": 900,
+  "maxHit": 160,
+  "attackStyle": "RANGE",
+  "combatLevels": {
+    "ATTACK": 10,
+    "RANGE": 40,
+    "STRENGTH": 10,
+    "DEFENSE": 10,
+    "MAGE": 0
+  },
+  "attackRange": 8,
+  "attackGfx": 22,
+  "attackProjectile": 13,
+  "agressivenessType": "AGGRESSIVE",
+  "aggroDistance": 10,
+  "deAggroDistance": 10,
+  "maxDistFromSpawn": -1
+}
