@@ -74,6 +74,13 @@ Some players intentionally have no clan, so the population contains both
 established groups and players available for recruitment. Clan membership is
 saved locally.
 
+After recruiting clanless players into a clan you own, use `::clanparty` (or
+`::clanpk`) to summon up to four of them as combat companions. They follow you,
+assist against bosses and other NPC targets, and join fights against simulated
+PKers in Wilderness multi-combat areas. Use `::clanparty status` to list the
+party or `::clanparty dismiss` to send them home. Companions do not receive XP
+or drops, and their damage is credited to you.
+
 ## Optional AI conversations with Ollama
 
 Scripted conversations work without any extra software. For open-ended local AI

@@ -263,7 +263,7 @@ object SimulatedPlayerSocial {
         else -> "Anyone want to team up after this?"
     }
 
-    private fun recruitedBotNames(player: Player): List<String> {
+    fun recruitedBotNames(player: Player): List<String> {
         val saved = player.getO<Any>(RECRUITED_BOTS_KEY) as? Collection<*> ?: return emptyList()
         return saved.mapNotNull { it as? String }
     }

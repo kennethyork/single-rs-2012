@@ -28,5 +28,15 @@ object SimulatedPlayerSocialCommands {
                 else -> SimulatedPlayerOllama.selectModel(player, choice)
             }
         }
+        Commands.add(Rights.PLAYER, "clanparty,clanpk [dismiss/status]", "Summons recruited clan members for bossing and Wilderness PKing.") { player, args ->
+            when (args.firstOrNull()?.lowercase()) {
+                "dismiss", "leave", "off" -> {
+                    val removed = SimulatedPlayerCompanionManager.dismissClanParty(player)
+                    player.sendMessage("Dismissed $removed clan combat companion${if (removed == 1) "" else "s"}.")
+                }
+                "status", "list" -> SimulatedPlayerCompanionManager.sendClanPartyStatus(player)
+                else -> SimulatedPlayerCompanionManager.summonClanParty(player)
+            }
+        }
     }
 }
