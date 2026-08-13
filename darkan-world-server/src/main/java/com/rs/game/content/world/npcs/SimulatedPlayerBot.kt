@@ -1,0 +1,138 @@
+package com.rs.game.content.world.npcs
+
+import com.rs.game.World
+import com.rs.game.content.world.areas.wilderness.WildernessController
+import com.rs.game.model.entity.Entity
+import com.rs.game.model.entity.interactions.PlayerCombatInteraction
+import com.rs.game.model.entity.player.Equipment
+import com.rs.game.model.entity.player.Player
+import com.rs.game.model.entity.player.Skills
+import com.rs.game.model.entity.player.managers.InterfaceManager.ScreenMode
+import com.rs.lib.Constants
+import com.rs.lib.game.Item
+import com.rs.lib.game.Tile
+import com.rs.lib.model.Account
+import com.rs.lib.io.InputStream
+import com.rs.lib.net.Decoder
+import com.rs.lib.net.Session
+import com.rs.net.encoders.WorldEncoder
+import com.rs.utils.shop.ShopsHandler
+import com.rs.lib.util.Utils
+import io.netty.channel.embedded.EmbeddedChannel
+import kotlin.math.abs
+
+/** A real, server-controlled Player entity with no attached game client. */
+class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(Account(definition.name)) {
+    private val home = Tile.of(definition.x, definition.y, definition.plane)
+    private val seed = abs(definition.name.hashCode())
+
+    init {
+        setTile(home)
+        val botSession = Session(EmbeddedChannel(), object : Decoder() {
+            override fun decode(stream: InputStream): Int = 0
+        })
+        botSession.setEncoder(WorldEncoder(this, botSession))
+        init(botSession, account, ScreenMode.FIXED.ordinal, 765, 503, null)
+        configureSkills()
+        configureAppearance()
+        startHeadless()
+        setCanPvp(definition.mode == SimulatedPlayerMode.PK && WildernessController.isAtWild(home))
+    }
+
+    override fun isHeadless(): Boolean = true
+
+    override fun processEntity() {
+        super.processEntity()
+        if (isDead || isLocked) return
+
+        if (definition.mode == SimulatedPlayerMode.PK && WildernessController.isAtWild(tile)) {
+            if (!isCanPvp) setCanPvp(true)
+            if (!inCombat() && tickCounter % 5 == 0L) {
+                World.players
+                    .filter { it !== this && !it.isHeadless && it.isCanPvp && !it.isDead && withinDistance(it.tile, 10) }
+                    .minByOrNull { Utils.getDistance(tile, it.tile) }
+                    ?.let { interactionManager.setInteraction(PlayerCombatInteraction(this, it)) }
+            }
+        } else if (isCanPvp) {
+            setCanPvp(false)
+        }
+
+        if (!inCombat() && definition.wander && tickCounter % (8L + seed % 9) == 0L) {
+            val radius = 5
+            val x = home.x + ((seed + tickCounter.toInt() * 3) % (radius * 2 + 1)) - radius
+            val y = home.y + ((seed / 7 + tickCounter.toInt() * 5) % (radius * 2 + 1)) - radius
+            resetWalkSteps()
+            addWalkSteps(x, y, 12, true)
+        }
+    }
+
+    fun showStatsTo(viewer: Player) {
+        val equipmentNames = equipment.itemsCopy.filterNotNull().take(8).joinToString(", ") { it.definitions.name }
+        viewer.sendMessage("<col=00ffff>${displayName}'s player profile</col>")
+        viewer.sendMessage("Combat: ${skills.combatLevelWithSummoning}  Total level: ${skills.totalLevel}")
+        viewer.sendMessage("Attack ${skills.getLevelForXp(Constants.ATTACK)}, Strength ${skills.getLevelForXp(Constants.STRENGTH)}, Defence ${skills.getLevelForXp(Constants.DEFENSE)}, Constitution ${skills.getLevelForXp(Constants.HITPOINTS)}")
+        viewer.sendMessage("Ranged ${skills.getLevelForXp(Constants.RANGE)}, Magic ${skills.getLevelForXp(Constants.MAGIC)}, Prayer ${skills.getLevelForXp(Constants.PRAYER)}, Summoning ${skills.getLevelForXp(Constants.SUMMONING)}")
+        viewer.sendMessage("Equipment: ${equipmentNames.ifEmpty { "None" }}")
+    }
+
+    fun openTradeFor(viewer: Player) {
+        if (definition.mode == SimulatedPlayerMode.PK)
+            viewer.sendMessage("${displayName} is not interested in trading while in the Wilderness.")
+        else
+            ShopsHandler.openShop(viewer, "simulated_player_trade")
+    }
+
+    override fun finish() {
+        if (hasFinished()) return
+        setFinished(true)
+        World.removePlayer(this)
+        com.rs.game.map.ChunkManager.updateChunks(this)
+        session.channel.close()
+    }
+
+    private fun configureSkills() {
+        val base = (definition.combatLevel * 0.72).toInt().coerceIn(3, 99)
+        for (skill in 0 until Constants.SKILL_NAME.size) {
+            val level = when (skill) {
+                Constants.ATTACK, Constants.STRENGTH, Constants.DEFENSE, Constants.HITPOINTS,
+                Constants.RANGE, Constants.MAGIC, Constants.PRAYER, Constants.SUMMONING -> base
+                else -> (1 + (seed + skill * 17) % base).coerceIn(1, 99)
+            }
+            skills.setXp(skill, Skills.getXPForLevel(level).toDouble())
+            skills.set(skill, level)
+        }
+        hitpoints = maxHitpoints
+    }
+
+    private fun configureAppearance() {
+        appearance.setMale(seed % 2 == 0)
+        appearance.setHairStyle(if (seed % 2 == 0) 5 + seed % 15 else 45 + seed % 12)
+        for (index in 0 until 5) appearance.setColor(index, (seed / (index + 1) + index * 19) % 220)
+
+        val sets = when (definition.style) {
+            Attack.MELEE -> arrayOf(
+                intArrayOf(10828, 1725, 11724, 11726, 21371, 22358, 21787, 20072, 20771),
+                intArrayOf(1163, 1725, 1127, 1079, 4587, 7462, 3105, 1201, 6570),
+                intArrayOf(3751, 6585, 2503, 2497, 4151, 7462, 3105, -1,  fireCape(seed))
+            )
+            Attack.RANGE -> arrayOf(
+                intArrayOf(20147, 25034, 20151, 20155, 20171, 22362, 21790, -1, 20771),
+                intArrayOf(3749, 6585, 2503, 2497, 861, 7462, 2577, -1, 6570),
+                intArrayOf( coif(seed),  amulet(seed), 1135, 1099, 11235, 1065, 2577, -1, 10499)
+            )
+            Attack.ICE_BARRAGE -> arrayOf(
+                intArrayOf(20159, 18335, 20163, 20167, 15486, 22366, 24986, 13738, 20771),
+                intArrayOf(6918, 6585, 6916, 6924, 1381, 6922, 6920, -1, 2412),
+                intArrayOf(4099, 1725, 4101, 4103, 4675, 7462, 3105, -1, 2413)
+            )
+        }
+        val set = sets[seed % sets.size]
+        val slots = intArrayOf(Equipment.HEAD, Equipment.NECK, Equipment.CHEST, Equipment.LEGS, Equipment.WEAPON, Equipment.HANDS, Equipment.FEET, Equipment.SHIELD, Equipment.CAPE)
+        slots.indices.forEach { index -> if (set[index] >= 0) equipment.setSlot(slots[index], Item(set[index])) }
+        appearance.generateAppearanceData()
+    }
+
+    private fun fireCape(value: Int) = if (value % 3 == 0) 6570 else 1052 + value % 10
+    private fun coif(value: Int) = if (value % 2 == 0) 1169 else 3749
+    private fun amulet(value: Int) = if (value % 2 == 0) 1725 else 6585
+}

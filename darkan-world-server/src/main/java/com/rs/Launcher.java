@@ -152,7 +152,7 @@ public final class Launcher {
 
 	public static void saveFilesSync() {
 		for (Player player : World.getPlayers()) {
-			if (player == null || !player.hasStarted() || player.hasFinished())
+			if (player == null || player.isHeadless() || !player.hasStarted() || player.hasFinished())
 				continue;
 			WorldDB.getPlayers().saveSync(player);
 		}
@@ -161,7 +161,7 @@ public final class Launcher {
 
 	public static void saveFilesAsync() {
 		for (Player player : World.getPlayers()) {
-			if (player == null || !player.hasStarted() || player.hasFinished())
+			if (player == null || player.isHeadless() || !player.hasStarted() || player.hasFinished())
 				continue;
 			WorldDB.getPlayers().save(player);
 		}

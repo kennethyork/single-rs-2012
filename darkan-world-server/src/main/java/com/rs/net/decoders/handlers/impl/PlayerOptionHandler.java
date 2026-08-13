@@ -23,6 +23,7 @@ import com.rs.game.model.entity.actions.EntityFollow;
 import com.rs.game.model.entity.interactions.PlayerCombatInteraction;
 import com.rs.game.model.entity.npc.NPC;
 import com.rs.game.model.entity.player.Player;
+import com.rs.game.content.world.npcs.SimulatedPlayerBot;
 import com.rs.lib.net.packets.PacketHandler;
 import com.rs.lib.net.packets.decoders.PlayerOp;
 import com.rs.plugin.PluginManager;
@@ -87,9 +88,15 @@ public class PlayerOptionHandler implements PacketHandler<Player, PlayerOp> {
 			if (!player.getControllerManager().canPlayerOption3(target))
 				return;
 			player.stopAll(true);
+			if (target instanceof SimulatedPlayerBot bot)
+				bot.showStatsTo(player);
 			break;
 		case PLAYER_OP4:
 			player.stopAll(true);
+			if (target instanceof SimulatedPlayerBot bot) {
+				bot.openTradeFor(player);
+				return;
+			}
 			if (!player.getControllerManager().canTrade() || !player.getControllerManager().canPlayerOption4(target))
 				return;
 			player.setRouteEvent(new RouteEvent(target, () -> {

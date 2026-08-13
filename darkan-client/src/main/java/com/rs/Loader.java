@@ -141,7 +141,7 @@ public class Loader extends Panel implements ImageObserver, MenuContainer, Seria
 	}
 
 	public void openFrame() {
-		clientFrame = new JFrame("Single RS3");
+		clientFrame = new JFrame("Single RS 2012");
 		clientFrame.setLayout(new BorderLayout());
 		JPanel client_panel = new JPanel();
 		client_panel.setLayout(new BorderLayout());

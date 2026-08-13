@@ -14,4 +14,4 @@ cd /d "%CLIENT_DIR%"
 call gradlew.bat clean shadowJar || exit /b 1
 cd /d "%WORLD_DIR%"
 call gradlew.bat clean shadowJar || exit /b 1
-echo Build complete. Start with run.bat 25 or run.bat 50.
+echo Build complete. Start with run.bat (1x XP), or pass a rate: run.bat 25 or run.bat 50.

@@ -181,7 +181,7 @@ public final class WorldThread extends Thread {
 
 				Timer timerEntityUpdate = new Timer().start();
 				for (Player player : World.getPlayers()) {
-					if (player == null || !player.hasStarted() || player.hasFinished())
+					if (player == null || player.isHeadless() || !player.hasStarted() || player.hasFinished())
 						continue;
 					try {
 						player.getPackets().sendLocalPlayersUpdate();
@@ -199,7 +199,7 @@ public final class WorldThread extends Thread {
 
 				Timer timerFlushPackets = new Timer().start();
 				for (Player player : World.getPlayers()) {
-					if (player == null || !player.hasStarted() || player.hasFinished())
+					if (player == null || player.isHeadless() || !player.hasStarted() || player.hasFinished())
 						continue;
 					player.getSession().flush();
 				}

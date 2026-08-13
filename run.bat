@@ -7,9 +7,9 @@ set "CLIENT_JAR=%ROOT_DIR%darkan-client\build\libs\darkan-client-shaded-1.0.1-al
 set "CACHE_DIR=%ROOT_DIR%darkan-cache"
 set "SAVE_DIR=%ROOT_DIR%saves"
 set "XP_RATE=%~1"
-if "%XP_RATE%"=="" set "XP_RATE=25"
-if not "%XP_RATE%"=="25" if not "%XP_RATE%"=="50" (
-  echo Usage: run.bat [25^|50]
+if "%XP_RATE%"=="" set "XP_RATE=1"
+echo %XP_RATE%| findstr /r "^[1-9][0-9]*$" >nul || (
+  echo Usage: run.bat [xp rate]   e.g. run.bat ^(1x^), run.bat 25, run.bat 50
   exit /b 2
 )
 

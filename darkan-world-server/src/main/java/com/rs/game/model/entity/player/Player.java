@@ -617,6 +617,8 @@ public class Player extends Entity {
 			house = new House();
 		if (lodestones == null)
 			resetLodestones();
+		else if (Settings.getConfig().isSinglePlayer())
+			Arrays.fill(lodestones, true);
 		if (dungManager == null)
 			dungManager = new DungManager(this);
 
@@ -826,6 +828,26 @@ public class Player extends Entity {
 			sendDeath(null);
 	}
 
+	/**
+	 * Starts a server-controlled player which has no game client of its own.
+	 * Headless players are still registered in the real player list and are
+	 * therefore encoded to nearby clients exactly like normal players.
+	 */
+	public void startHeadless() {
+		super.loadMapRegions();
+		getMapChunksNeedInit().addAll(getMapChunkIds());
+		started = true;
+		running = true;
+		chosenAccountType = true;
+		getNSV().setB("idleLogImmune", true);
+		appearence.generateAppearanceData();
+	}
+
+	/** True for server-controlled player bots which have no outbound client. */
+	public boolean isHeadless() {
+		return false;
+	}
+
 	public void stopAll() {
 		stopAll(true);
 	}
@@ -933,6 +955,12 @@ public class Player extends Entity {
 	@Override
 	public void processEntity() {
 		try {
+			// Headless simulated players use the real player entity, movement, combat,
+			// and appearance systems, but do not own a game client or its managers.
+			if (isHeadless()) {
+				super.processEntity();
+				return;
+			}
 			if (getSession().isClosed())
 				finish(0);
 			processPackets();
@@ -1355,8 +1383,12 @@ public class Player extends Entity {
 
 	public void resetLodestones() {
 		lodestones = new boolean[Lodestone.values().length];
-		lodestones[0] = true;
-		lodestones[1] = true;
+		if (Settings.getConfig().isSinglePlayer())
+			Arrays.fill(lodestones, true);
+		else {
+			lodestones[0] = true;
+			lodestones[1] = true;
+		}
 	}
 
 	public void unlockLodestone(Lodestone stone, GameObject object) {
@@ -1391,6 +1423,8 @@ public class Player extends Entity {
 	}
 
 	public boolean unlockedLodestone(Lodestone stone) {
+		if (Settings.getConfig().isSinglePlayer())
+			return true;
 		if (stone == Lodestone.BANDIT_CAMP)
 			return isQuestComplete(Quest.DESERT_TREASURE);
 		if (stone == Lodestone.LUNAR_ISLE)
@@ -1530,6 +1564,7 @@ public class Player extends Entity {
 
 	public void sendDefaultPlayersOptions() {
 		setPlayerOption("Follow", 2);
+		setPlayerOption("View stats", 3);
 		setPlayerOption("Trade with", 4);
 	}
 

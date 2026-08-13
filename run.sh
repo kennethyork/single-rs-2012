@@ -7,11 +7,11 @@ WORLD_JAR="$WORLD_DIR/build/libs/world-server-2.0.12-all.jar"
 CLIENT_JAR="$ROOT_DIR/darkan-client/build/libs/darkan-client-shaded-1.0.1-all.jar"
 CACHE_DIR="$ROOT_DIR/darkan-cache"
 SAVE_DIR="$ROOT_DIR/saves"
-XP_RATE=${1:-25}
+XP_RATE=${1:-1}
 
 case "$XP_RATE" in
-    25|50) ;;
-    *) echo "Usage: ./run.sh [25|50]" >&2; exit 2 ;;
+    ''|*[!0-9]*) echo "Usage: ./run.sh [xp rate]   e.g. ./run.sh (1x), ./run.sh 25, ./run.sh 50" >&2; exit 2 ;;
+    0) echo "The XP rate must be at least 1." >&2; exit 2 ;;
 esac
 
 if [ -x "$WORLD_DIR/.jdk24/bin/java" ]; then

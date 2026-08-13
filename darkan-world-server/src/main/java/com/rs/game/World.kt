@@ -87,7 +87,7 @@ object World {
         players.add(player)
         PLAYER_MAP_USERNAME[player.username] = player
         PLAYER_MAP_DISPLAYNAME[player.displayName] = player
-        if (player.session != null && !player.username.contains("cli_bot")) AccountLimiter.add(player.session.ip)
+		if (!player.isHeadless && player.session != null && !player.username.contains("cli_bot")) AccountLimiter.add(player.session.ip)
     }
 
     @JvmStatic
@@ -265,6 +265,10 @@ object World {
             try {
                 for (player in players) {
                     if (player == null || !player.hasStarted()) continue
+					if (player.isHeadless) {
+						player.finish()
+						continue
+					}
                     player.packets.sendLogout(true)
                     player.realFinish()
                     WorldDB.getPlayers().saveSync(player)

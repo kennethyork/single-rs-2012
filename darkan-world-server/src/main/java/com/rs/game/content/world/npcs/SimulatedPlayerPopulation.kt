@@ -47,7 +47,7 @@ data class SimulatedPlayerPopulation(
 )
 
 object SimulatedPlayerPopulationManager {
-    private val spawnedBots = mutableListOf<PKBotNPC>()
+	private val spawnedBots = mutableListOf<SimulatedPlayerBot>()
     var economySettings = SimulatedPlayerEconomySettings()
         private set
     var companionSettings = SimulatedPlayerCompanionSettings()
@@ -92,10 +92,7 @@ object SimulatedPlayerPopulationManager {
                 return@forEach
             }
 
-            spawnedBots += PKBotNPC(
-                Tile.of(definition.x, definition.y, definition.plane),
-                definition
-            )
+			spawnedBots += SimulatedPlayerBot(definition)
         }
 
         Logger.info(javaClass, "load", "Spawned ${spawnedBots.size} simulated players")
@@ -135,9 +132,7 @@ object SimulatedPlayerPopulationManager {
     }
 
     fun removeAll() {
-        spawnedBots.forEach { bot ->
-            if (!bot.hasFinished()) bot.finish()
-        }
+		spawnedBots.forEach { bot -> if (!bot.hasFinished()) bot.finish() }
         spawnedBots.clear()
     }
 

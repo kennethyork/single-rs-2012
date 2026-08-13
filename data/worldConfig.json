@@ -1,0 +1,116 @@
+{
+  "serverName": "Darkan",
+  "ownerName": "trent",
+  "cachePath": "../cache/",
+  "debug": false,
+  "enableJFR": false,
+  "allowHighMemUseOptimizations": false,
+  "mongoUrl": "localhost",
+  "mongoPort": 27017,
+  "mongoUser": "",
+  "mongoPass": "",
+  "mongoDbName": "darkan-server",
+  "lobbyIp": "dev.darkan.org",
+  "lobbyApiKey": "TEST_API_KEY",
+  "worldInfo": {
+    "number": 3,
+    "ipAddress": "127.0.0.1",
+    "port": 43595,
+    "activity": "My Test World",
+    "country": 1,
+    "quickChat": false,
+    "lootShare": true,
+    "members": true,
+    "pvp": false,
+    "highlight": false
+  },
+  "loginMessage": "",
+  "playerStartTile": {
+    "x": 2889,
+    "y": 3528,
+    "plane": 0
+  },
+  "playerRespawnTile": {
+    "x": 2887,
+    "y": 3535,
+    "plane": 0
+  },
+  "xpRate": 1,
+  "dropModifier": 1.0,
+  "startItems": [
+    {
+      "id": 1351,
+      "amount": 1
+    },
+    {
+      "id": 590,
+      "amount": 1
+    },
+    {
+      "id": 303,
+      "amount": 1
+    },
+    {
+      "id": 315,
+      "amount": 1
+    },
+    {
+      "id": 1925,
+      "amount": 1
+    },
+    {
+      "id": 1931,
+      "amount": 1
+    },
+    {
+      "id": 2309,
+      "amount": 1
+    },
+    {
+      "id": 1265,
+      "amount": 1
+    },
+    {
+      "id": 1205,
+      "amount": 1
+    },
+    {
+      "id": 1277,
+      "amount": 1
+    },
+    {
+      "id": 1171,
+      "amount": 1
+    },
+    {
+      "id": 841,
+      "amount": 1
+    },
+    {
+      "id": 882,
+      "amount": 25
+    },
+    {
+      "id": 556,
+      "amount": 25
+    },
+    {
+      "id": 558,
+      "amount": 15
+    },
+    {
+      "id": 555,
+      "amount": 6
+    },
+    {
+      "id": 557,
+      "amount": 4
+    },
+    {
+      "id": 559,
+      "amount": 2
+    }
+  ],
+  "singlePlayer": false,
+  "savePath": "./saves"
+}

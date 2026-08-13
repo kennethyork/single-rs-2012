@@ -17,4 +17,4 @@ fi
 
 (cd "$CLIENT_DIR" && JAVA_HOME="$BUILD_JAVA_HOME" GRADLE_USER_HOME="$GRADLE_DIR" ./gradlew clean shadowJar)
 (cd "$WORLD_DIR" && JAVA_HOME="$BUILD_JAVA_HOME" GRADLE_USER_HOME="$GRADLE_DIR" ./gradlew clean shadowJar)
-echo "Build complete. Start with ./run.sh 25 or ./run.sh 50."
+echo "Build complete. Start with ./run.sh (1x XP), or pass a rate: ./run.sh 25 or ./run.sh 50."
