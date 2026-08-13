@@ -3,6 +3,7 @@ package com.rs
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.io.File
+import com.rs.game.content.world.npcs.simulatedPlayerAccount
 
 /** Starts the local world and matching client in one JVM. */
 object SinglePlayerLauncher {
@@ -35,6 +36,9 @@ object SinglePlayerLauncher {
         check(File("./data/npcs/simulated-players.json").isFile) { "Simulated-player configuration is missing" }
         Class.forName("com.rs.Launcher", false, javaClass.classLoader)
         Class.forName("com.rs.Loader", false, javaClass.classLoader)
+        check(simulatedPlayerAccount("Smoke Bot").rights != null) {
+            "Simulated players cannot encode private or clan chat"
+        }
         println("SMOKE TEST PASSED: Java ${Runtime.version().feature()}, cache, world, client, and bot configuration")
     }
 

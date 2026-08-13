@@ -2,6 +2,7 @@ package com.rs.game.content.world.npcs
 
 import com.rs.game.World
 import com.rs.game.content.world.areas.wilderness.WildernessController
+import com.rs.game.tasks.WorldTasks
 import com.rs.game.model.entity.Entity
 import com.rs.game.model.entity.interactions.PlayerCombatInteraction
 import com.rs.game.model.entity.player.Equipment
@@ -11,6 +12,7 @@ import com.rs.game.model.entity.player.managers.InterfaceManager.ScreenMode
 import com.rs.lib.Constants
 import com.rs.lib.game.Item
 import com.rs.lib.game.PublicChatMessage
+import com.rs.lib.game.Rights
 import com.rs.lib.game.Tile
 import com.rs.lib.model.Account
 import com.rs.lib.io.InputStream
@@ -22,11 +24,14 @@ import com.rs.lib.util.Utils
 import io.netty.channel.embedded.EmbeddedChannel
 import kotlin.math.abs
 
+/** Social packet encoders require every sender to have a crown/rights value. */
+internal fun simulatedPlayerAccount(name: String) = Account(name).also { it.rights = Rights.PLAYER }
+
 /** A real, server-controlled Player entity with no attached game client. */
-class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(Account(definition.name)) {
+class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(simulatedPlayerAccount(definition.name)) {
     private val home = Tile.of(definition.x, definition.y, definition.plane)
     private val seed = definition.name.hashCode().let { if (it == Int.MIN_VALUE) 0 else abs(it) }
-    private var nextChatTick = 80L + seed % 120
+    private var nextChatTick = 12L + seed % 25
 
     init {
         setTile(home)
@@ -61,7 +66,7 @@ class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(Acc
 
         if (tickCounter >= nextChatTick) {
             val spoke = SimulatedPlayerChat.trySpeak(this, seed)
-            nextChatTick = tickCounter + if (spoke) 240L + seed % 180 else 50L + seed % 50
+            nextChatTick = tickCounter + if (spoke) 100L + seed % 80 else 30L + seed % 35
         }
 
         if (!inCombat() && definition.wander && tickCounter % (8L + seed % 9) == 0L) {
@@ -143,12 +148,13 @@ class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(Acc
     private fun fireCape(value: Int) = if (value % 3 == 0) 6570 else 1052 + value % 10
     private fun coif(value: Int) = if (value % 2 == 0) 1169 else 3749
     private fun amulet(value: Int) = if (value % 2 == 0) 1725 else 6585
+
 }
 
 /** Low-frequency public chat shared by the simulated-player population. */
 private object SimulatedPlayerChat {
     private const val VIEW_DISTANCE = 14
-    private const val BASE_GLOBAL_COOLDOWN_MS = 30_000L
+    private const val BASE_GLOBAL_COOLDOWN_MS = 18_000L
     private var nextPopulationChatAt = 0L
 
     fun trySpeak(bot: SimulatedPlayerBot, seed: Int): Boolean {
@@ -165,9 +171,33 @@ private object SimulatedPlayerChat {
         val line = lines[Math.floorMod(seed + (bot.tickCounter / 50L).toInt(), lines.size)]
         bot.faceEntityTile(listener)
         bot.sendPublicChatMessage(PublicChatMessage(line, 0))
-        nextPopulationChatAt = now + BASE_GLOBAL_COOLDOWN_MS + (seed % 16) * 1_000L
+        nearbyPartner(bot, listener)?.let { partner ->
+            WorldTasks.delay(4) {
+                if (!bot.hasFinished() && !partner.hasFinished() && !listener.hasFinished() &&
+                    partner.withinDistance(bot, VIEW_DISTANCE) && partner.withinDistance(listener, VIEW_DISTANCE)) {
+                    partner.faceEntityTile(bot)
+                    partner.sendPublicChatMessage(PublicChatMessage(partnerReply(partner, bot, line), 0))
+                }
+            }
+        }
+        nextPopulationChatAt = now + BASE_GLOBAL_COOLDOWN_MS + (seed % 10) * 1_000L
         return true
     }
+
+    private fun nearbyPartner(speaker: SimulatedPlayerBot, listener: Player): SimulatedPlayerBot? =
+        SimulatedPlayerPopulationManager.activeBots().firstOrNull {
+            it !== speaker && !it.isDead && !it.hasFinished() &&
+                it.withinDistance(speaker, VIEW_DISTANCE) && it.withinDistance(listener, VIEW_DISTANCE)
+        }
+
+    private fun partnerReply(bot: SimulatedPlayerBot, speaker: SimulatedPlayerBot, message: String): String =
+        when (Math.floorMod(bot.username.hashCode() + message.hashCode(), 5)) {
+            0 -> "Yeah, ${speaker.displayName} has a point."
+            1 -> "What are you training next?"
+            2 -> "I was just thinking that."
+            3 -> "Anyone want to team up later?"
+            else -> "Fair enough."
+        }
 
     private fun linesFor(bot: SimulatedPlayerBot, listener: Player): List<String> {
         if (bot.definition.mode == SimulatedPlayerMode.PK) {
