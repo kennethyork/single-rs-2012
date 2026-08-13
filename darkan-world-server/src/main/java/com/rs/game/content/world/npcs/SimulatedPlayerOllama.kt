@@ -22,9 +22,13 @@ import java.util.concurrent.atomic.AtomicLong
 /** Optional, non-blocking Ollama conversation engine with scripted fallback. */
 object SimulatedPlayerOllama {
     private const val HISTORY_FILE = "ollama-conversations.json"
+    private const val MODEL_FILE = "ollama-model.json"
     private const val MAX_SAVED_CONVERSATIONS = 500
+    private val MODEL_NAME = Regex("[A-Za-z0-9][A-Za-z0-9._/-]{0,98}(?::[A-Za-z0-9][A-Za-z0-9._-]{0,98})?")
+    private val SUGGESTED_MODELS = listOf("qwen3.5:4b", "llama3.2:3b", "gemma3:4b", "phi4-mini")
 
     private data class Turn(val role: String = "", val content: String = "")
+    private data class ModelSelection(val model: String = "")
     private data class PendingReply(
         val bot: SimulatedPlayerBot,
         val player: Player,
@@ -42,11 +46,20 @@ object SimulatedPlayerOllama {
     private val unavailableUntil = AtomicLong(0L)
     private val lastFailureLog = AtomicLong(0L)
     private val lastSuccessfulResponse = AtomicLong(0L)
+    @Volatile private var modelOverride: String? = null
     @Volatile private var configured = false
 
     fun configure() {
         if (configured) return
         configured = true
+        try {
+            val savedModel = LocalFileStore.read(MODEL_FILE)
+                ?.let { gson.fromJson(it, ModelSelection::class.java)?.model }
+                ?.takeIf(::isValidModelName)
+            modelOverride = savedModel
+        } catch (error: Throwable) {
+            Logger.handle(javaClass, "configure", "Unable to restore the selected Ollama model", error)
+        }
         if (!SimulatedPlayerPopulationManager.ollamaSettings.persistHistory) return
         try {
             val json = LocalFileStore.read(HISTORY_FILE) ?: return
@@ -92,6 +105,42 @@ object SimulatedPlayerOllama {
         return keys.size
     }
 
+    fun activeModel(): String = modelOverride ?: SimulatedPlayerPopulationManager.ollamaSettings.model
+
+    fun sendModelHelp(player: Player) {
+        player.sendMessage("Current bot model: <col=00ffff>${activeModel()}</col>")
+        player.sendMessage("Use ::ollamamodel model-name to switch, or ::ollamamodel reset for the default.")
+        player.sendMessage("Suggested models: ${SUGGESTED_MODELS.joinToString(", ")}")
+        player.sendMessage("Install a model first in a terminal with: ollama pull model-name")
+    }
+
+    fun selectModel(player: Player, requestedModel: String) {
+        val model = requestedModel.trim()
+        if (!isValidModelName(model)) {
+            player.sendMessage("Invalid Ollama model name. Use letters, numbers, ., _, -, / and one optional :tag.")
+            return
+        }
+        if (!saveModelSelection(model)) {
+            player.sendMessage("The model could not be saved. Check that the saves folder is writable.")
+            return
+        }
+        modelOverride = model
+        resetConnectionState()
+        player.sendMessage("Bot model changed to <col=00ffff>$model</col>. This choice is saved for future sessions.")
+        probe { result -> if (!player.hasFinished()) player.sendMessage(result) }
+    }
+
+    fun resetModel(player: Player) {
+        if (!saveModelSelection("")) {
+            player.sendMessage("The model selection could not be reset. Check that the saves folder is writable.")
+            return
+        }
+        modelOverride = null
+        resetConnectionState()
+        player.sendMessage("Bot model reset to the configured default: <col=00ffff>${activeModel()}</col>.")
+        probe { result -> if (!player.hasFinished()) player.sendMessage(result) }
+    }
+
     fun statusLines(): List<String> {
         val settings = SimulatedPlayerPopulationManager.ollamaSettings
         val now = System.currentTimeMillis()
@@ -103,7 +152,7 @@ object SimulatedPlayerOllama {
         }
         return listOf(
             "<col=00ffff>Ollama bot chat:</col> $state",
-            "Model: ${settings.model}  Endpoint: ${settings.baseUrl}",
+            "Model: ${activeModel()}${if (modelOverride != null) " (in-game selection)" else ""}  Endpoint: ${settings.baseUrl}",
             "Memory: ${settings.historyMessages} messages, ${if (settings.persistHistory) "saved locally" else "session only"}; queued: ${queues.values.sumOf { it.size }}",
             "Public cooldown: ${settings.publicCooldownSeconds}s  Clan cooldown: ${settings.clanCooldownSeconds}s"
         )
@@ -121,7 +170,7 @@ object SimulatedPlayerOllama {
             player.sendMessage("Bot conversations are using scripted replies. Use ::ollamastatus for details.")
             return
         }
-        player.sendMessage("Bot AI is enabled with ${settings.model}; scripted replies take over if Ollama is unavailable.")
+        player.sendMessage("Bot AI is enabled with ${activeModel()}; scripted replies take over if Ollama is unavailable.")
         if (isLocalEndpoint(settings.baseUrl))
             player.sendMessage("<col=80ff80>Privacy:</col> Ollama conversations and memory stay on this computer. Use ::ollamaforget to erase saved chat memory.")
         else
@@ -154,7 +203,7 @@ object SimulatedPlayerOllama {
             history.forEach { messages.add(jsonMessage(it.role, it.content)) }
         }
         val body = JsonObject().apply {
-            addProperty("model", settings.model)
+            addProperty("model", activeModel())
             add("messages", messages)
             addProperty("stream", false)
             addProperty("think", false)
@@ -233,6 +282,7 @@ object SimulatedPlayerOllama {
     private fun probe(deliver: (String) -> Unit) {
         val settings = SimulatedPlayerPopulationManager.ollamaSettings
         if (!settings.enabled) return
+        val model = activeModel()
         val request = try {
             HttpRequest.newBuilder(URI.create(settings.baseUrl.trimEnd('/') + "/api/tags"))
                 .timeout(Duration.ofSeconds(3)).GET().build()
@@ -244,10 +294,10 @@ object SimulatedPlayerOllama {
             val result = if (error == null && response?.statusCode() == 200) {
                 val installed = try {
                     JsonParser.parseString(response.body()).asJsonObject.getAsJsonArray("models")
-                        ?.any { it.asJsonObject.get("name")?.asString == settings.model } == true
+                        ?.any { it.asJsonObject.get("name")?.asString == model } == true
                 } catch (_: Throwable) { false }
-                if (installed) "<col=80ff80>Ollama connection check: online; ${settings.model} is installed.</col>"
-                else "<col=ffcc00>Ollama is online, but ${settings.model} is not installed. Run: ollama pull ${settings.model}</col>"
+                if (installed) "<col=80ff80>Ollama connection check: online; $model is installed.</col>"
+                else "<col=ffcc00>Ollama is online, but $model is not installed. Run: ollama pull $model</col>"
             } else "<col=ffcc00>Ollama connection check: offline; scripted fallback is active.</col>"
             WorldTasks.delay(0) { deliver(result) }
         }
@@ -257,6 +307,22 @@ object SimulatedPlayerOllama {
         val host = URI.create(baseUrl).host ?: return false
         host.equals("localhost", true) || host == "127.0.0.1" || host == "::1" || host.startsWith("127.")
     } catch (_: Throwable) { false }
+
+    private fun isValidModelName(model: String): Boolean =
+        model.length <= 199 && MODEL_NAME.matches(model) && !model.contains("..") && !model.contains("//")
+
+    private fun saveModelSelection(model: String): Boolean = try {
+        LocalFileStore.writeAtomic(MODEL_FILE, gson.toJson(ModelSelection(model)))
+        true
+    } catch (error: Throwable) {
+        Logger.handle(javaClass, "saveModelSelection", "Unable to save the selected Ollama model", error)
+        false
+    }
+
+    private fun resetConnectionState() {
+        unavailableUntil.set(0L)
+        lastSuccessfulResponse.set(0L)
+    }
 
     private fun markUnavailable(error: Throwable?, status: Int?) {
         val now = System.currentTimeMillis()

@@ -81,7 +81,7 @@ replies, install [Ollama](https://ollama.com/download), download the default
 model once, and leave Ollama running while you play:
 
 ```sh
-ollama pull llama3.2:3b
+ollama pull qwen3.5:4b
 ```
 
 The game automatically uses Ollama when it is available and falls back to its
@@ -94,7 +94,14 @@ Useful in-game commands:
 | Command | Purpose |
 | --- | --- |
 | `::ollamastatus` | Show the endpoint, model availability, queue, and fallback state |
+| `::ollamamodel` | Show the current model and suggested models |
+| `::ollamamodel qwen3.5:4b` | Switch models and save the choice between game sessions |
+| `::ollamamodel reset` | Return to the model in `simulated-players.json` |
 | `::ollamaforget` | Delete your saved AI conversation memory |
+
+Before switching, install that model in a terminal with `ollama pull model-name`.
+The in-game choice is stored in `saves/ollama-model.json`, so updating the game
+does not overwrite it.
 
 The release configuration is at
 `world/data/npcs/simulated-players.json`. From a source checkout, it is at
@@ -133,7 +140,7 @@ launcher in macOS Privacy & Security settings.
 ### Bots use scripted replies
 
 That is the expected fallback when Ollama is stopped or its model is missing.
-Start Ollama, run `ollama pull llama3.2:3b`, and check `::ollamastatus` in game.
+Start Ollama, run `ollama pull qwen3.5:4b`, and check `::ollamastatus` in game.
 
 ### I want a different XP rate
 

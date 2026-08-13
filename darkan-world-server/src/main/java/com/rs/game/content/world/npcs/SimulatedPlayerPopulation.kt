@@ -52,7 +52,7 @@ data class SimulatedPlayerPopulation(
 data class SimulatedPlayerOllamaSettings(
     val enabled: Boolean = false,
     val baseUrl: String = "http://127.0.0.1:11434",
-    val model: String = "llama3.2:3b",
+    val model: String = "qwen3.5:4b",
     val timeoutSeconds: Int = 30,
     val historyMessages: Int = 8,
     val publicCooldownSeconds: Int = 4,

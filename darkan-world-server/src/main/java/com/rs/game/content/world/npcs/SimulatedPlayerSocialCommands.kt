@@ -19,5 +19,14 @@ object SimulatedPlayerSocialCommands {
             val removed = SimulatedPlayerOllama.forget(player)
             player.sendMessage("Erased $removed saved bot conversation${if (removed == 1) "" else "s"} from this computer.")
         }
+        Commands.add(Rights.PLAYER, "ollamamodel,botmodel [model/reset/list]", "Changes the local bot conversation model.") { player, args ->
+            val choice = args.firstOrNull()?.trim().orEmpty()
+            when (choice.lowercase()) {
+                "" -> SimulatedPlayerOllama.sendModelHelp(player)
+                "list" -> SimulatedPlayerOllama.sendModelHelp(player)
+                "reset", "default" -> SimulatedPlayerOllama.resetModel(player)
+                else -> SimulatedPlayerOllama.selectModel(player, choice)
+            }
+        }
     }
 }
