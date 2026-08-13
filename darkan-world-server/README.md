@@ -36,7 +36,7 @@ git clone git@github.com:DarkanRS/world-server.git
 For the self-contained edition in the parent folder, run `../run.sh 25` or
 `../run.sh 50`. It starts this world and the matching HD client in one process,
 uses local file saves, and does not require MongoDB or a remote lobby. See
-`../OFFLINE_README.md` for login, save, bot, and all-skill autopilot details.
+`../README.md` for login, save, and bot details.
 
 - (Optional if not using the test-lobby-db) Make sure you have a MongoDB server running on your local machine or somewhere else (the connection URL for the Mongo server can be configured through the serverConfig.json file that gets generated after trying to run the world server once)
 - Create an account on the test lobby server by running the client and clicking "Create Account Now" button at the bottom of the login screen.

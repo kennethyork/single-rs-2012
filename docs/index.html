@@ -9,32 +9,10 @@
 </head>
 <body>
   <header>
-    <div class="container">
-      <div class="banner-plate">
-        <svg class="banner-art" viewBox="0 0 600 150" role="img" aria-label="Single RS 2012">
-          <defs>
-            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#2b3b52" /><stop offset="1" stop-color="#6d5a3c" />
-            </linearGradient>
-            <linearGradient id="goldfill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#fff3d2" /><stop offset=".45" stop-color="#e0bd69" />
-              <stop offset=".46" stop-color="#c99f45" /><stop offset="1" stop-color="#9a7526" />
-            </linearGradient>
-          </defs>
-          <rect width="600" height="150" fill="url(#sky)" />
-          <circle cx="497" cy="46" r="21" fill="#ffe7a0" opacity=".85" />
-          <path d="M0 118 L70 96 L128 116 L200 92 L268 118 L340 100 L410 120 L480 102 L545 120 L600 106 L600 150 L0 150 Z" fill="#26301f" />
-          <path d="M0 132 L80 118 L170 134 L260 120 L350 136 L450 122 L540 136 L600 126 L600 150 L0 150 Z" fill="#171f14" />
-          <g fill="#1d2418">
-            <rect x="42" y="70" width="16" height="52" /><rect x="38" y="64" width="24" height="8" />
-            <rect x="70" y="80" width="34" height="42" /><rect x="116" y="74" width="14" height="48" />
-            <rect x="112" y="68" width="22" height="8" />
-          </g>
-          <text class="banner-title" x="300" y="72" text-anchor="middle" fill="url(#goldfill)">Single RS 2012</text>
-        </svg>
-      </div>
-      <p>A fully self-contained 2012-era RuneScape world &mdash; single player, entirely offline</p>
+    <div class="banner-backdrop">
+      <img class="banner-art" src="images/banner.png" alt="Single RS 2012 world map" />
     </div>
+    <p>A fully self-contained 2012-era RuneScape world &mdash; single player, entirely offline</p>
   </header>
 
   <main>
@@ -87,24 +65,6 @@
           <li><strong>Wilderness players</strong> &mdash; the 88 PK bots are the only population bots that can attack or be attacked</li>
           <li><strong>Activity helpers</strong> for bosses, Dungeoneering, and Pest Control stay activity-specific: no XP, no drops, no saved accounts</li>
         </ul>
-
-        <h3>Autopilot &mdash; one skill at a time</h3>
-        <div class="chatbox" aria-hidden="true">
-          <p class="c-sent"><span class="c-name">You:</span> ::autobot woodcutting</p>
-          <p><span class="c-msg">Autopilot is now training Woodcutting (level 62).</span></p>
-          <p><span class="c-sys">You gain 1,250 Woodcutting XP.</span></p>
-          <p><span class="c-lvl">Congratulations, you have just advanced a Woodcutting level!</span></p>
-          <p class="c-input"><span class="c-name">You:</span> ::autobot status<i></i></p>
-        </div>
-        <ul>
-          <li><code>::autobot &lt;skill&gt;</code> &mdash; train that one skill and stay on it (e.g. <code>::autobot mining</code>)</li>
-          <li><code>::autobot on</code> &mdash; sequential: train the current skill to 99, then move to the next</li>
-          <li><code>::autobot next</code> &mdash; skip to the next skill still under 99</li>
-          <li><code>::autobot status</code> &mdash; show the skill it is on and that skill's level</li>
-          <li><code>::autobot off</code> &mdash; stop automated training</li>
-          <li>Short names work too: <code>wc</code>, <code>rc</code>, <code>fm</code>, <code>hp</code>, <code>str</code>, <code>att</code>, <code>def</code>, <code>con</code>, <code>dg</code>, <code>summ</code></li>
-          <li>The chosen skill and mode are saved with the character; automated XP uses the rate you launched with</li>
-        </ul>
       </div>
     </section>
 
@@ -140,10 +100,9 @@
       <div class="container">
         <h2>Screenshots</h2>
         <div class="images">
-          <!-- Drop PNGs with these names into docs/ to replace the placeholders. -->
-          <figure><img src="login-screen.png" alt="Login screen" /><figcaption>Login screen</figcaption></figure>
-          <figure><img src="gameplay.png" alt="Gameplay UI" /><figcaption>Gameplay</figcaption></figure>
-          <figure><img src="player-bots.png" alt="Player bots in the Grand Exchange" /><figcaption>Player bots</figcaption></figure>
+          <figure><img src="images/login.png" alt="Login screen" /><figcaption>Login screen</figcaption></figure>
+          <figure><img src="images/gameplay.png" alt="Gameplay UI" /><figcaption>Gameplay</figcaption></figure>
+          <figure><img src="images/grandexchange.png" alt="Player bots in the Grand Exchange" /><figcaption>Player bots</figcaption></figure>
         </div>
       </div>
     </section>

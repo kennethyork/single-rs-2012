@@ -32,7 +32,7 @@ game.
 All lodestone home-teleport destinations are unlocked in offline mode, including
 the quest-gated ones.
 
-## Bots and autopilot
+## Bots
 
 The local world starts with 286 server-controlled player entities. They render
 through the real player protocol and have distinct appearances, equipment, skill
@@ -44,22 +44,6 @@ profiles, and combat levels.
   can attack or be attacked.
 - **Activity helpers** for bosses, Dungeoneering, and Pest Control stay
   activity-specific: no XP, no drops, no saved accounts.
-
-### Autopilot
-
-The autopilot trains one skill at a time — it does not rotate between skills.
-
-| Command                | Effect                                                              |
-| ---------------------- | ------------------------------------------------------------------- |
-| `::autobot <skill>`    | Train that skill only, and stay on it (e.g. `::autobot woodcutting`) |
-| `::autobot on`         | Sequential: train the current skill to 99, then move to the next     |
-| `::autobot next`       | Skip to the next skill that is still under 99                        |
-| `::autobot status`     | Show which skill it is on and that skill's level                     |
-| `::autobot off`        | Stop automated training                                              |
-
-Common short names work too (`wc`, `rc`, `fm`, `hp`, `str`, `att`, `def`, `con`,
-`dg`, `summ`). The chosen skill and mode are saved with the character, and all
-automated XP uses the same rate you launched with.
 
 ## Release build
 
