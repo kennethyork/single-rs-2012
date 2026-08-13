@@ -22,6 +22,7 @@
         <div class="download-buttons">
           <a href="https://github.com/kennethyork/single-rs-2012/releases/tag/v0.2.0" class="cta">Linux Download (v0.2.0)</a>
           <a href="https://github.com/kennethyork/single-rs-2012/releases/tag/v0.2.0" class="cta">Windows Download (v0.2.0)</a>
+          <a href="https://github.com/kennethyork/single-rs-2012/releases/tag/v0.2.0" class="cta">macOS Download (v0.2.0)</a>
           <a href="https://github.com/kennethyork/single-rs-2012/releases" class="cta cta-alt">View all releases</a>
         </div>
         <div class="release-badges" aria-label="GitHub release information">
@@ -62,7 +63,7 @@
           <li>Any new username creates a local character &mdash; passwords are ignored</li>
           <li>Admin account: log in as <code>root</code> for all owner commands</li>
           <li>Back up or move a whole game by copying the <code>saves/</code> folder</li>
-          <li>One-command launch on Linux (<code>./run.sh</code>) and Windows (<code>run.bat</code>)</li>
+          <li>One-command launch on Linux (<code>./run.sh</code>), Windows (<code>run.bat</code>), and macOS (<code>./run.command</code>)</li>
           <li>Trade social bots directly through the Player Marketplace, or use the local Grand Exchange</li>
         </ul>
 
@@ -96,10 +97,18 @@
           <li>Play at a boosted rate: <code>run.bat 25</code> or <code>run.bat 50</code></li>
         </ul>
 
+        <h3>macOS</h3>
+        <ul>
+          <li>Download the ready-to-run <a href="https://github.com/kennethyork/single-rs-2012/releases/latest">latest release from GitHub</a>, choose the macOS x64 ZIP, then extract it</li>
+          <li>Play at normal rates: <code>./run.command</code> <button class="copy" type="button" data-copy="./run.command">Copy</button></li>
+          <li>Play at a boosted rate: <code>./run.command 25</code> <button class="copy" type="button" data-copy="./run.command 25">Copy</button> or <code>./run.command 50</code> <button class="copy" type="button" data-copy="./run.command 50">Copy</button></li>
+          <li>Intel Macs run it directly; Apple Silicon Macs require Rosetta 2 for the original 2012 Intel client libraries</li>
+        </ul>
+
         <h3>Good to know</h3>
         <ul>
           <li>Pick any new username at the login screen &mdash; that creates the local character. Password text is ignored.</li>
-          <li>The Linux and Windows release archives ship the cache, prebuilt jars, and a bundled Java runtime.</li>
+          <li>The Linux, Windows, and macOS release archives ship the cache, prebuilt jars, and a bundled Java runtime.</li>
           <li>Source checkouts omit the proprietary game cache &mdash; place a compatible cache in <code>darkan-cache/</code>.</li>
           <li>A fresh source build may fetch dependencies once; a prepared release runs offline from the start.</li>
         </ul>

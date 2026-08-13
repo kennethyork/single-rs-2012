@@ -17,6 +17,9 @@ folders.
 - Linux: `./run.sh` for normal 1x XP, or pass a multiplier — `./run.sh 25`,
   `./run.sh 50`, or any whole number.
 - Windows: `run.bat` for normal 1x XP, or `run.bat 25` / `run.bat 50`.
+- macOS: `./run.command` for normal 1x XP, or `./run.command 25` /
+  `./run.command 50`. Apple Silicon Macs require Rosetta 2 because the original
+  2012 client libraries are Intel binaries.
 - If the jars have not been built yet, run `./build-offline.sh` (Linux) or
   `build-offline.bat` (Windows) once first.
 
@@ -47,10 +50,11 @@ profiles, and combat levels.
 
 ## Release builds
 
-The Linux and Windows release archives include the cache, prebuilt client and
-world jars, and a bundled Java runtime. Extract the archive for your platform,
-then run `./run.sh` on Linux or `run.bat` on Windows. Pass an XP multiplier such
-as `25` or `50` to either launcher, then choose a username.
+The Linux, Windows, and macOS release archives include the cache, prebuilt
+client and world jars, and a bundled Java runtime. Extract the archive for your
+platform, then run `./run.sh` on Linux, `run.bat` on Windows, or `run.command`
+on macOS. Pass an XP multiplier such as `25` or `50` to any launcher, then
+choose a username.
 
 Source checkouts omit the proprietary game cache and local saves. Use the
 release archive for a ready-to-run copy, or place a compatible cache in
