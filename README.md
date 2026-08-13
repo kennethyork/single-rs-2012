@@ -45,11 +45,12 @@ profiles, and combat levels.
 - **Activity helpers** for bosses, Dungeoneering, and Pest Control stay
   activity-specific: no XP, no drops, no saved accounts.
 
-## Release build
+## Release builds
 
-The Linux release archive includes the cache, prebuilt client and world jars,
-and a bundled Java runtime. Extract it, run `./run.sh` (or `./run.sh 25`, or
-`./run.sh 50`), then choose a username.
+The Linux and Windows release archives include the cache, prebuilt client and
+world jars, and a bundled Java runtime. Extract the archive for your platform,
+then run `./run.sh` on Linux or `run.bat` on Windows. Pass an XP multiplier such
+as `25` or `50` to either launcher, then choose a username.
 
 Source checkouts omit the proprietary game cache and local saves. Use the
 release archive for a ready-to-run copy, or place a compatible cache in

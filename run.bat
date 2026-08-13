@@ -8,10 +8,17 @@ set "CACHE_DIR=%ROOT_DIR%darkan-cache"
 set "SAVE_DIR=%ROOT_DIR%saves"
 set "XP_RATE=%~1"
 if "%XP_RATE%"=="" set "XP_RATE=1"
-echo %XP_RATE%| findstr /r "^[1-9][0-9]*$" >nul || (
+set "INVALID_RATE="
+for /f "delims=0123456789" %%A in ("%XP_RATE%") do set "INVALID_RATE=1"
+if defined INVALID_RATE goto invalid_rate
+if "%XP_RATE%"=="0" goto invalid_rate
+goto valid_rate
+
+:invalid_rate
   echo Usage: run.bat [xp rate]   e.g. run.bat ^(1x^), run.bat 25, run.bat 50
   exit /b 2
-)
+
+:valid_rate
 
 set "JAVA_BIN=java"
 if exist "%WORLD_DIR%\.jdk24\bin\java.exe" set "JAVA_BIN=%WORLD_DIR%\.jdk24\bin\java.exe"
