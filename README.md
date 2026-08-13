@@ -42,7 +42,11 @@ through the real player protocol and have distinct appearances, equipment, skill
 profiles, and combat levels.
 
 - **Social players** populate towns, Daemonheim, and the Grand Exchange.
-  Right-click one to view its stats or open the Player Marketplace.
+  Right-click one to view its stats or open the Player Marketplace. Nearby bots
+  answer public chat, hold private-message conversations, and can invite you to
+  persistent clans with working clan chat, while some remain clanless. Right-click
+  a player and choose **Clan options** to join their clan or recruit a clanless
+  player into your own. Player-owned clans can be created from the Clan Chat tab.
 - **Wilderness players** — the 88 PK bots — are the only population bots that
   can attack or be attacked.
 - **Activity helpers** for bosses, Dungeoneering, and Pest Control stay

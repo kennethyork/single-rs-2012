@@ -16,6 +16,9 @@
 //
 package com.rs.net.decoders.handlers.impl.chat;
 
+import com.rs.Settings;
+import com.rs.game.World;
+import com.rs.game.content.world.npcs.SimulatedPlayerSocial;
 import com.rs.game.model.entity.player.Player;
 import com.rs.lib.net.packets.PacketHandler;
 import com.rs.lib.net.packets.decoders.chat.SendPrivateMessage;
@@ -27,6 +30,18 @@ public class SendPrivateMessageHandler implements PacketHandler<Player, SendPriv
 	public void handle(Player player, SendPrivateMessage packet) {
 		if (player.getAccount().isMuted()) {
 			player.sendMessage("You are muted. The mute will be lifted at " + player.getAccount().getUnmuteDate());
+			return;
+		}
+		if (Settings.getConfig().isSinglePlayer()) {
+			if (SimulatedPlayerSocial.handlePrivateMessage(player, packet.getToDisplayName(), packet.getMessage()))
+				return;
+			Player target = World.getPlayerByDisplay(packet.getToDisplayName());
+			if (target != null && !target.isHeadless() && !target.hasFinished()) {
+				player.getPackets().sendPrivateMessage(target.getDisplayName(), packet.getMessage());
+				target.getPackets().receivePrivateMessage(player.getAccount(), packet.getMessage());
+			} else {
+				player.sendMessage("Unable to find " + packet.getToDisplayName() + ".");
+			}
 			return;
 		}
 		LobbyCommunicator.forwardPackets(player, packet);

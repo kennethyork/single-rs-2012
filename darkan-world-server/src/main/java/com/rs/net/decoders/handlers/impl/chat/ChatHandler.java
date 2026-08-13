@@ -18,6 +18,7 @@ package com.rs.net.decoders.handlers.impl.chat;
 
 import com.rs.engine.command.Commands;
 import com.rs.game.content.skills.dungeoneering.DungeonController;
+import com.rs.game.content.world.npcs.SimulatedPlayerSocial;
 import com.rs.game.model.entity.player.Player;
 import com.rs.lib.game.PublicChatMessage;
 import com.rs.lib.net.packets.PacketHandler;
@@ -38,7 +39,11 @@ public class ChatHandler implements PacketHandler<Player, Chat> {
 		}
 		int effects = (packet.getColor() << 8) | (packet.getEffect() & 0xff);
 		switch(player.chatType) {
-		case 1, 2, 3 -> LobbyCommunicator.forwardPackets(player, packet.setType(player.chatType));
+		case 2, 3 -> {
+			if (!SimulatedPlayerSocial.onClanMessage(player, packet.getMessage(), player.chatType == 3))
+				LobbyCommunicator.forwardPackets(player, packet.setType(player.chatType));
+		}
+		case 1 -> LobbyCommunicator.forwardPackets(player, packet.setType(player.chatType));
 		default -> {
 			if (packet.getMessage() == null || packet.getMessage().replaceAll(" ", "").equals(""))
 				return;
@@ -49,8 +54,10 @@ public class ChatHandler implements PacketHandler<Player, Chat> {
 			if (player.getControllerManager().getController() instanceof DungeonController)
 				for (Player party : player.getDungManager().getParty().getTeam())
 					party.getPackets().sendPublicMessage(player, new PublicChatMessage(packet.getMessage(), effects));
-			else
+			else {
 				player.sendPublicChatMessage(new PublicChatMessage(packet.getMessage(), effects));
+				SimulatedPlayerSocial.onPublicMessage(player, packet.getMessage());
+			}
 		}
 		}
 	}

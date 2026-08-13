@@ -16,6 +16,7 @@
 //
 package com.rs.game.content.clans;
 
+import com.rs.Settings;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.rs.cache.loaders.EnumDefinitions;
@@ -24,6 +25,7 @@ import com.rs.engine.dialogue.Dialogue;
 import com.rs.engine.dialogue.statements.SimpleStatement;
 import com.rs.engine.dialogue.statements.Statement;
 import com.rs.game.World;
+import com.rs.game.content.world.npcs.SimulatedPlayerSocial;
 import com.rs.game.model.entity.npc.NPC;
 import com.rs.game.model.entity.npc.NPCBodyMeshModifier;
 import com.rs.game.model.entity.player.Player;
@@ -55,11 +57,29 @@ import static com.rs.engine.variables.VarPlayer.clan_keyword_temp_cat_varp;
 public class ClansManager {
 	
 	private static final Map<String, Clan> CACHED_CLANS = new ConcurrentHashMap<>();
+
+	public static Clan getCachedClan(String name) {
+		if (name == null)
+			return null;
+		Clan direct = CACHED_CLANS.get(name);
+		if (direct != null)
+			return direct;
+		return CACHED_CLANS.entrySet().stream()
+				.filter(entry -> entry.getKey().equalsIgnoreCase(name))
+				.map(Map.Entry::getValue)
+				.findFirst().orElse(null);
+	}
+
+	public static void registerLocalClan(Clan clan) {
+		if (clan != null && clan.getName() != null)
+			CACHED_CLANS.put(clan.getName(), clan);
+	}
 	
 	public static Clan getClan(String name) {
 		if (name == null)
 			return null;
-		if (CACHED_CLANS.get(name) == null) {
+		Clan cached = getCachedClan(name);
+		if (cached == null) {
 			try {
 				LobbyCommunicator.getClan(name, clan -> {
 					if (clan == null || clan.getName() == null) {
@@ -73,7 +93,7 @@ public class ClansManager {
 			}
 			return null;
 		}
-		return CACHED_CLANS.get(name);
+		return getCachedClan(name);
 	}
 	
 	public static void getClan(String name, Consumer<Clan> cb) {
@@ -162,6 +182,13 @@ public class ClansManager {
 
 	public static void promptName(Player player) {
 		player.sendInputName("Which name would you like for your clan?", name -> {
+			if (Settings.getConfig().isSinglePlayer()) {
+				player.sendOptionDialogue("Create the clan " + name + "?", ops -> {
+					ops.add("Yes, create " + name + ".", () -> SimulatedPlayerSocial.createPlayerClan(player, name));
+					ops.add("No, choose another name.", () -> promptName(player));
+				});
+				return;
+			}
 			if (player.getTempAttribs().getB("ccCreateLock")) {
 				player.simpleDialogue("Your previous request to create a clan is still in progress... Please wait or relog.");
 				return;

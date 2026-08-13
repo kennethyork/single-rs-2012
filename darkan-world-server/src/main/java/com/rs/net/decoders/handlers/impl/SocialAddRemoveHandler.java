@@ -16,15 +16,44 @@
 //
 package com.rs.net.decoders.handlers.impl;
 
+import com.rs.Settings;
+import com.rs.game.World;
+import com.rs.game.content.world.npcs.SimulatedPlayerBot;
+import com.rs.game.content.world.npcs.SimulatedPlayerPopulationManager;
 import com.rs.game.model.entity.player.Player;
+import com.rs.lib.model.Account;
+import com.rs.lib.model.Friend;
+import com.rs.lib.net.ClientPacket;
 import com.rs.lib.net.packets.PacketHandler;
 import com.rs.lib.net.packets.decoders.SocialAddRemove;
+import com.rs.lib.net.packets.encoders.social.FriendStatus;
 import com.rs.net.LobbyCommunicator;
 
 public class SocialAddRemoveHandler implements PacketHandler<Player, SocialAddRemove> {
 
 	@Override
 	public void handle(Player player, SocialAddRemove packet) {
+		if (Settings.getConfig().isSinglePlayer()) {
+			SimulatedPlayerBot bot = SimulatedPlayerPopulationManager.INSTANCE.findByDisplayName(packet.getName());
+			Player online = World.getPlayerByDisplay(packet.getName());
+			Account target = bot != null ? bot.getAccount() : online != null ? online.getAccount() : null;
+			if (target == null) {
+				player.sendMessage("Unable to find " + packet.getName() + ".");
+				return;
+			}
+			if (packet.getOpcode() == ClientPacket.ADD_FRIEND) {
+				player.getSocial().addFriend(target);
+				player.getSession().write(new FriendStatus(player.getAccount(),
+						new Friend(target, Settings.getConfig().getWorldInfo(), false)));
+			} else if (packet.getOpcode() == ClientPacket.REMOVE_FRIEND) {
+				player.getSocial().removeFriend(target);
+			} else if (packet.getOpcode() == ClientPacket.ADD_IGNORE) {
+				player.getSocial().addIgnore(target);
+			} else if (packet.getOpcode() == ClientPacket.REMOVE_IGNORE) {
+				player.getSocial().removeIgnore(target);
+			}
+			return;
+		}
 		LobbyCommunicator.forwardPackets(player, packet);
 	}
 

@@ -24,6 +24,7 @@ import com.rs.game.model.entity.interactions.PlayerCombatInteraction;
 import com.rs.game.model.entity.npc.NPC;
 import com.rs.game.model.entity.player.Player;
 import com.rs.game.content.world.npcs.SimulatedPlayerBot;
+import com.rs.game.content.world.npcs.SimulatedPlayerSocial;
 import com.rs.lib.net.packets.PacketHandler;
 import com.rs.lib.net.packets.decoders.PlayerOp;
 import com.rs.plugin.PluginManager;
@@ -146,6 +147,10 @@ public class PlayerOptionHandler implements PacketHandler<Player, PlayerOp> {
 			}));
 			break;
 		case PLAYER_OP5:
+			if (target instanceof SimulatedPlayerBot bot) {
+				player.stopAll(true);
+				SimulatedPlayerSocial.handleClanAction(player, bot);
+			}
 			break;
 		case PLAYER_OP6:
 			break;

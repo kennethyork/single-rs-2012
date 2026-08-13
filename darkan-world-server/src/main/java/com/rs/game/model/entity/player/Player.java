@@ -77,6 +77,7 @@ import com.rs.game.content.transportation.FadingScreen;
 import com.rs.game.content.tutorialisland.GamemodeSelection;
 import com.rs.game.content.tutorialisland.TutorialIslandController;
 import com.rs.game.content.world.MusicianKt;
+import com.rs.game.content.world.npcs.SimulatedPlayerSocial;
 import com.rs.game.ge.GE;
 import com.rs.game.ge.Offer;
 import com.rs.game.map.ChunkManager;
@@ -1223,6 +1224,8 @@ public class Player extends Entity {
 		addIP(getSession().getIP());
 		lastIP = getSession().getIP();
 		interfaceManager.sendInterfaces();
+		if (Settings.getConfig().isSinglePlayer())
+			SimulatedPlayerSocial.restoreSocialState(this);
 		getPackets().sendRunEnergy(runEnergy);
 		refreshAllowChatEffects();
 		refreshMouseButtons();
@@ -1566,6 +1569,8 @@ public class Player extends Entity {
 		setPlayerOption("Follow", 2);
 		setPlayerOption("View stats", 3);
 		setPlayerOption("Trade with", 4);
+		if (Settings.getConfig().isSinglePlayer())
+			setPlayerOption("Clan options", 5);
 	}
 
 	@SuppressWarnings("deprecation")

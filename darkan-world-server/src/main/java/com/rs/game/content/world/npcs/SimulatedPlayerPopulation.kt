@@ -23,7 +23,9 @@ data class SimulatedPlayerDefinition(
     val mode: SimulatedPlayerMode = SimulatedPlayerMode.SOCIAL,
     val wander: Boolean = true,
     val dropsEquipment: Boolean = false,
-    val combatLevel: Int = 126
+    val combatLevel: Int = 126,
+    val location: String = "",
+    val clan: String = ""
 )
 
 data class SimulatedPlayerRegion(
@@ -95,6 +97,8 @@ object SimulatedPlayerPopulationManager {
 			spawnedBots += SimulatedPlayerBot(definition)
         }
 
+        SimulatedPlayerSocial.initializeClans()
+
         Logger.info(javaClass, "load", "Spawned ${spawnedBots.size} simulated players")
     }
 
@@ -119,8 +123,22 @@ object SimulatedPlayerPopulationManager {
                 plane = region.plane,
                 style = Attack.entries[index % Attack.entries.size],
                 mode = region.mode,
-                combatLevel = level
+                combatLevel = level,
+                location = region.name,
+                clan = if (index % 3 == 0) "" else generatedClan(region.name, region.mode)
             )
+        }
+    }
+
+    private fun generatedClan(regionName: String, mode: SimulatedPlayerMode): String {
+        if (mode == SimulatedPlayerMode.PK) return "Wilderness Guard"
+        return when (regionName.lowercase(Locale.ROOT)) {
+            "grand exchange", "varrock" -> "Varrock Exchange"
+            "lumbridge" -> "Lumbridge Legends"
+            "catherby", "seers village", "karamja" -> "Skillers Union"
+            "daemonheim" -> "Daemonheim Delvers"
+            "edgeville" -> "Edgeville Crew"
+            else -> "Gielinor Adventurers"
         }
     }
 
@@ -137,6 +155,12 @@ object SimulatedPlayerPopulationManager {
     }
 
     fun activeCount(): Int = spawnedBots.count { !it.hasFinished() }
+
+    fun activeBots(): List<SimulatedPlayerBot> = spawnedBots.filterNot { it.hasFinished() }
+
+    fun findByDisplayName(name: String): SimulatedPlayerBot? = activeBots().firstOrNull {
+        it.displayName.equals(name.trim(), ignoreCase = true) || it.username.equals(name.trim(), ignoreCase = true)
+    }
 }
 
 @ServerStartupEvent

@@ -10,6 +10,7 @@ import com.rs.game.model.entity.player.Skills
 import com.rs.game.model.entity.player.managers.InterfaceManager.ScreenMode
 import com.rs.lib.Constants
 import com.rs.lib.game.Item
+import com.rs.lib.game.PublicChatMessage
 import com.rs.lib.game.Tile
 import com.rs.lib.model.Account
 import com.rs.lib.io.InputStream
@@ -24,7 +25,8 @@ import kotlin.math.abs
 /** A real, server-controlled Player entity with no attached game client. */
 class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(Account(definition.name)) {
     private val home = Tile.of(definition.x, definition.y, definition.plane)
-    private val seed = abs(definition.name.hashCode())
+    private val seed = definition.name.hashCode().let { if (it == Int.MIN_VALUE) 0 else abs(it) }
+    private var nextChatTick = 80L + seed % 120
 
     init {
         setTile(home)
@@ -57,6 +59,11 @@ class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(Acc
             setCanPvp(false)
         }
 
+        if (tickCounter >= nextChatTick) {
+            val spoke = SimulatedPlayerChat.trySpeak(this, seed)
+            nextChatTick = tickCounter + if (spoke) 240L + seed % 180 else 50L + seed % 50
+        }
+
         if (!inCombat() && definition.wander && tickCounter % (8L + seed % 9) == 0L) {
             val radius = 5
             val x = home.x + ((seed + tickCounter.toInt() * 3) % (radius * 2 + 1)) - radius
@@ -70,6 +77,7 @@ class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(Acc
         val equipmentNames = equipment.itemsCopy.filterNotNull().take(8).joinToString(", ") { it.definitions.name }
         viewer.sendMessage("<col=00ffff>${displayName}'s player profile</col>")
         viewer.sendMessage("Combat: ${skills.combatLevelWithSummoning}  Total level: ${skills.totalLevel}")
+        viewer.sendMessage("Clan: ${social.clanName ?: "None"}")
         viewer.sendMessage("Attack ${skills.getLevelForXp(Constants.ATTACK)}, Strength ${skills.getLevelForXp(Constants.STRENGTH)}, Defence ${skills.getLevelForXp(Constants.DEFENSE)}, Constitution ${skills.getLevelForXp(Constants.HITPOINTS)}")
         viewer.sendMessage("Ranged ${skills.getLevelForXp(Constants.RANGE)}, Magic ${skills.getLevelForXp(Constants.MAGIC)}, Prayer ${skills.getLevelForXp(Constants.PRAYER)}, Summoning ${skills.getLevelForXp(Constants.SUMMONING)}")
         viewer.sendMessage("Equipment: ${equipmentNames.ifEmpty { "None" }}")
@@ -135,4 +143,123 @@ class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(Acc
     private fun fireCape(value: Int) = if (value % 3 == 0) 6570 else 1052 + value % 10
     private fun coif(value: Int) = if (value % 2 == 0) 1169 else 3749
     private fun amulet(value: Int) = if (value % 2 == 0) 1725 else 6585
+}
+
+/** Low-frequency public chat shared by the simulated-player population. */
+private object SimulatedPlayerChat {
+    private const val VIEW_DISTANCE = 14
+    private const val BASE_GLOBAL_COOLDOWN_MS = 30_000L
+    private var nextPopulationChatAt = 0L
+
+    fun trySpeak(bot: SimulatedPlayerBot, seed: Int): Boolean {
+        val now = System.currentTimeMillis()
+        if (now < nextPopulationChatAt) return false
+
+        val listener = World.players
+            .asSequence()
+            .filter { it !== bot && !it.isHeadless && !it.isDead && !it.hasFinished() && bot.withinDistance(it, VIEW_DISTANCE) }
+            .minByOrNull { Utils.getDistance(bot.tile, it.tile) }
+            ?: return false
+
+        val lines = linesFor(bot, listener)
+        val line = lines[Math.floorMod(seed + (bot.tickCounter / 50L).toInt(), lines.size)]
+        bot.faceEntityTile(listener)
+        bot.sendPublicChatMessage(PublicChatMessage(line, 0))
+        nextPopulationChatAt = now + BASE_GLOBAL_COOLDOWN_MS + (seed % 16) * 1_000L
+        return true
+    }
+
+    private fun linesFor(bot: SimulatedPlayerBot, listener: Player): List<String> {
+        if (bot.definition.mode == SimulatedPlayerMode.PK) {
+            return if (bot.inCombat()) listOf(
+                "Sit!",
+                "You're not getting away!",
+                "Should've banked first.",
+                "Good luck escaping this one.",
+                "Protect item might help!"
+            ) else listOf(
+                "Watch your back out here.",
+                "Anyone seen a white dot?",
+                "The Wilderness is quiet today.",
+                "Risking much, ${listener.displayName}?",
+                "Stay out of multi."
+            )
+        }
+
+        if (bot.inCombat()) return listOf(
+            "Almost got it.",
+            "Come on, hit!",
+            "I should've brought more food.",
+            "This is taking forever.",
+            "There goes another potion."
+        )
+
+        return when (bot.definition.location.lowercase()) {
+            "grand exchange" -> listOf(
+                "Anyone selling sharks?",
+                "Price check on dragon bones?",
+                "The GE is busy today.",
+                "Just waiting on an offer.",
+                "I should've bought these yesterday."
+            )
+            "lumbridge" -> listOf(
+                "Back to Lumbridge again.",
+                "Where did I put my tinderbox?",
+                "These goblins never learn.",
+                "Nice weather for fishing.",
+                "Welcome to Lumbridge, ${listener.displayName}."
+            )
+            "varrock" -> listOf(
+                "Heading to the Grand Exchange?",
+                "Varrock is packed today.",
+                "I need to visit the west bank.",
+                "Anyone training Mining?",
+                "The guards here have it easy."
+            )
+            "catherby" -> listOf(
+                "Fishing levels?",
+                "Nothing beats Catherby fishing.",
+                "I could use a bigger net.",
+                "Banking another load.",
+                "These lobsters are taking ages."
+            )
+            "seers village" -> listOf(
+                "The maples are crowded again.",
+                "Anyone doing the agility course?",
+                "Just one more Woodcutting level.",
+                "Banking these logs.",
+                "Seers is always relaxing."
+            )
+            "daemonheim" -> listOf(
+                "Anyone up for Dungeoneering?",
+                "Need one more for a floor.",
+                "What complexity are we doing?",
+                "I forgot to bind my weapon.",
+                "Large floor after this?"
+            )
+            "edgeville" -> listOf(
+                "Anyone heading into the Wilderness?",
+                "Bank your valuables first.",
+                "Edgeville never changes.",
+                "I need more food before I go.",
+                "Careful past that ditch."
+            )
+            "karamja" -> listOf(
+                "Forgot my coins for the boat again.",
+                "The fishing spot moved.",
+                "Karamja is too hot.",
+                "Anyone brought a lobster pot?",
+                "Time to bank this catch."
+            )
+            else -> listOf(
+                "What are you training, ${listener.displayName}?",
+                "Nearly got another level.",
+                "I need to clear some bank space.",
+                "Nice gear.",
+                "Where should I train next?",
+                "Anyone doing a farm run?",
+                "I miss bonus XP weekend."
+            )
+        }
+    }
 }
