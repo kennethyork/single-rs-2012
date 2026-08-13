@@ -15,6 +15,13 @@
     "minimumGuidePricePercent": 50,
     "maximumGuidePricePercent": 200
   },
+  "ollama": {
+    "enabled": true,
+    "baseUrl": "http://127.0.0.1:11434",
+    "model": "llama3.2:3b",
+    "timeoutSeconds": 30,
+    "historyMessages": 8
+  },
   "regions": [
     { "name": "Lumbridge", "x": 3222, "y": 3218, "plane": 0, "radius": 18, "count": 16, "mode": "SOCIAL", "minCombatLevel": 3, "maxCombatLevel": 70 },
     { "name": "Varrock", "x": 3210, "y": 3424, "plane": 0, "radius": 28, "count": 18, "mode": "SOCIAL", "minCombatLevel": 10, "maxCombatLevel": 100 },

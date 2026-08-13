@@ -84,13 +84,17 @@ object SimulatedPlayerSocial {
 
         WorldTasks.delay(2 + Math.floorMod(message.hashCode(), 3)) {
             if (player.hasFinished() || bot.hasFinished() || !bot.withinDistance(player, RESPONSE_DISTANCE)) return@delay
-            bot.faceEntityTile(player)
-            bot.sendPublicChatMessage(PublicChatMessage(reply(bot, player, message, false), 0))
-            nearbyConversationPartner(bot)?.let { second ->
-                WorldTasks.delay(4) {
-                    if (!second.hasFinished() && second.withinDistance(player, RESPONSE_DISTANCE)) {
-                        second.faceEntityTile(bot)
-                        second.sendPublicChatMessage(PublicChatMessage(followUp(second, bot, message), 0))
+            SimulatedPlayerOllama.reply(bot, player, "public", message, { reply(bot, player, message, false) }) { answer ->
+                if (!player.hasFinished() && !bot.hasFinished() && bot.withinDistance(player, RESPONSE_DISTANCE)) {
+                    bot.faceEntityTile(player)
+                    bot.sendPublicChatMessage(PublicChatMessage(answer, 0))
+                    nearbyConversationPartner(bot)?.let { second ->
+                        WorldTasks.delay(4) {
+                            if (!second.hasFinished() && second.withinDistance(player, RESPONSE_DISTANCE)) {
+                                second.faceEntityTile(bot)
+                                second.sendPublicChatMessage(PublicChatMessage(followUp(second, bot, answer), 0))
+                            }
+                        }
                     }
                 }
             }
@@ -105,7 +109,10 @@ object SimulatedPlayerSocial {
         WorldTasks.delay(2 + Math.floorMod(message.hashCode(), 3)) {
             if (!player.hasFinished() && !bot.hasFinished()) {
                 if (wantsClanInvite(message)) joinClan(player, bot)
-                player.packets.receivePrivateMessage(bot.account, reply(bot, player, message, true))
+                SimulatedPlayerOllama.reply(bot, player, "private", message, { reply(bot, player, message, true) }) { answer ->
+                    if (!player.hasFinished() && !bot.hasFinished())
+                        player.packets.receivePrivateMessage(bot.account, answer)
+                }
             }
         }
         return true
@@ -120,8 +127,10 @@ object SimulatedPlayerSocial {
         val bot = SimulatedPlayerPopulationManager.activeBots().firstOrNull { clanName(it) == clan.name }
         if (bot != null && acquireLock("clan:${clan.name}", 5_000L)) {
             WorldTasks.delay(3) {
-                clanViewers(clan, guest).forEach {
-                    it.packets.receiveClanChatMessage(bot.account, reply(bot, player, message, false), guest)
+                SimulatedPlayerOllama.reply(bot, player, "clan", message, { reply(bot, player, message, false) }) { answer ->
+                    clanViewers(clan, guest).forEach {
+                        it.packets.receiveClanChatMessage(bot.account, answer, guest)
+                    }
                 }
             }
         }

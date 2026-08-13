@@ -52,6 +52,22 @@ profiles, and combat levels.
 - **Activity helpers** for bosses, Dungeoneering, and Pest Control stay
   activity-specific: no XP, no drops, no saved accounts.
 
+### Optional Ollama conversations
+
+For open-ended local AI conversations, install [Ollama](https://ollama.com/download)
+and download the configured model once:
+
+```sh
+ollama pull llama3.2:3b
+```
+
+Keep Ollama running, then start Single RS 2012 normally. Public chat, private
+messages, and clan chat retain short per-bot conversation histories. The default
+configuration is in `world/data/npcs/simulated-players.json` in a release, or
+`darkan-world-server/data/npcs/simulated-players.json` in a source checkout.
+Change `model`, `baseUrl`, or `enabled` under `ollama` there. Ollama is optional:
+if it is unavailable, bots immediately fall back to the built-in scripted replies.
+
 ## Release builds
 
 The Linux, Windows, and macOS release archives include the cache, prebuilt

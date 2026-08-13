@@ -45,7 +45,16 @@ data class SimulatedPlayerPopulation(
     val bots: List<SimulatedPlayerDefinition> = emptyList(),
     val regions: List<SimulatedPlayerRegion> = emptyList(),
     val companions: SimulatedPlayerCompanionSettings = SimulatedPlayerCompanionSettings(),
-    val economy: SimulatedPlayerEconomySettings = SimulatedPlayerEconomySettings()
+    val economy: SimulatedPlayerEconomySettings = SimulatedPlayerEconomySettings(),
+    val ollama: SimulatedPlayerOllamaSettings = SimulatedPlayerOllamaSettings()
+)
+
+data class SimulatedPlayerOllamaSettings(
+    val enabled: Boolean = false,
+    val baseUrl: String = "http://127.0.0.1:11434",
+    val model: String = "llama3.2:3b",
+    val timeoutSeconds: Int = 30,
+    val historyMessages: Int = 8
 )
 
 object SimulatedPlayerPopulationManager {
@@ -53,6 +62,8 @@ object SimulatedPlayerPopulationManager {
     var economySettings = SimulatedPlayerEconomySettings()
         private set
     var companionSettings = SimulatedPlayerCompanionSettings()
+        private set
+    var ollamaSettings = SimulatedPlayerOllamaSettings()
         private set
 
     fun load() {
@@ -76,6 +87,7 @@ object SimulatedPlayerPopulationManager {
 
         economySettings = population.economy
         companionSettings = population.companions
+        ollamaSettings = population.ollama
 
         val usedNames = HashSet<String>()
         val definitions = population.bots + population.regions.flatMap(::generateRegion)
