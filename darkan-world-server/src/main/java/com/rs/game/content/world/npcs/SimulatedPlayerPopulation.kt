@@ -54,7 +54,12 @@ data class SimulatedPlayerOllamaSettings(
     val baseUrl: String = "http://127.0.0.1:11434",
     val model: String = "llama3.2:3b",
     val timeoutSeconds: Int = 30,
-    val historyMessages: Int = 8
+    val historyMessages: Int = 8,
+    val publicCooldownSeconds: Int = 4,
+    val clanCooldownSeconds: Int = 5,
+    val minimumResponseDelayTicks: Int = 2,
+    val maximumResponseDelayTicks: Int = 4,
+    val persistHistory: Boolean = true
 )
 
 object SimulatedPlayerPopulationManager {
@@ -88,6 +93,7 @@ object SimulatedPlayerPopulationManager {
         economySettings = population.economy
         companionSettings = population.companions
         ollamaSettings = population.ollama
+        SimulatedPlayerOllama.configure()
 
         val usedNames = HashSet<String>()
         val definitions = population.bots + population.regions.flatMap(::generateRegion)

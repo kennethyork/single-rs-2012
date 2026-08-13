@@ -80,9 +80,10 @@ object SimulatedPlayerSocial {
             .filter { !it.isDead && it.withinDistance(player, RESPONSE_DISTANCE) }
             .minByOrNull { Utils.getDistance(it.tile, player.tile) }
             ?: return
-        if (!acquireLock("public:${player.username}", 4_000L)) return
+        val ollama = SimulatedPlayerPopulationManager.ollamaSettings
+        if (!acquireLock("public:${player.username}", ollama.publicCooldownSeconds.coerceIn(1, 120) * 1_000L)) return
 
-        WorldTasks.delay(2 + Math.floorMod(message.hashCode(), 3)) {
+        WorldTasks.delay(responseDelay(message)) {
             if (player.hasFinished() || bot.hasFinished() || !bot.withinDistance(player, RESPONSE_DISTANCE)) return@delay
             SimulatedPlayerOllama.reply(bot, player, "public", message, { reply(bot, player, message, false) }) { answer ->
                 if (!player.hasFinished() && !bot.hasFinished() && bot.withinDistance(player, RESPONSE_DISTANCE)) {
@@ -106,7 +107,7 @@ object SimulatedPlayerSocial {
         if (!Settings.getConfig().isSinglePlayer) return false
         val bot = SimulatedPlayerPopulationManager.findByDisplayName(recipient) ?: return false
         player.packets.sendPrivateMessage(bot.displayName, message)
-        WorldTasks.delay(2 + Math.floorMod(message.hashCode(), 3)) {
+        WorldTasks.delay(responseDelay(message)) {
             if (!player.hasFinished() && !bot.hasFinished()) {
                 if (wantsClanInvite(message)) joinClan(player, bot)
                 SimulatedPlayerOllama.reply(bot, player, "private", message, { reply(bot, player, message, true) }) { answer ->
@@ -125,7 +126,8 @@ object SimulatedPlayerSocial {
         val clan = ClansManager.getCachedClan(name) ?: return false
         clanViewers(clan, guest).forEach { it.packets.receiveClanChatMessage(player.account, message, guest) }
         val bot = SimulatedPlayerPopulationManager.activeBots().firstOrNull { clanName(it) == clan.name }
-        if (bot != null && acquireLock("clan:${clan.name}", 5_000L)) {
+        val cooldown = SimulatedPlayerPopulationManager.ollamaSettings.clanCooldownSeconds.coerceIn(1, 120) * 1_000L
+        if (bot != null && acquireLock("clan:${clan.name}", cooldown)) {
             WorldTasks.delay(3) {
                 SimulatedPlayerOllama.reply(bot, player, "clan", message, { reply(bot, player, message, false) }) { answer ->
                     clanViewers(clan, guest).forEach {
@@ -272,6 +274,12 @@ object SimulatedPlayerSocial {
     private fun wantsClanInvite(message: String) = any(message.lowercase(Locale.ROOT), "join clan", "clan invite", "invite me", "can i join")
     private fun any(message: String, vararg terms: String) = terms.any(message::contains)
     private fun choice(value: String, size: Int) = Math.floorMod(value.hashCode(), size)
+    private fun responseDelay(message: String): Int {
+        val settings = SimulatedPlayerPopulationManager.ollamaSettings
+        val minimum = settings.minimumResponseDelayTicks.coerceIn(0, 50)
+        val maximum = settings.maximumResponseDelayTicks.coerceIn(minimum, 100)
+        return minimum + Math.floorMod(message.hashCode(), maximum - minimum + 1)
+    }
     private fun acquireLock(key: String, duration: Long): Boolean {
         val now = System.currentTimeMillis()
         val previous = responseLocks.put(key, now + duration)

@@ -20,7 +20,12 @@
     "baseUrl": "http://127.0.0.1:11434",
     "model": "llama3.2:3b",
     "timeoutSeconds": 30,
-    "historyMessages": 8
+    "historyMessages": 8,
+    "publicCooldownSeconds": 4,
+    "clanCooldownSeconds": 5,
+    "minimumResponseDelayTicks": 2,
+    "maximumResponseDelayTicks": 4,
+    "persistHistory": true
   },
   "regions": [
     { "name": "Lumbridge", "x": 3222, "y": 3218, "plane": 0, "radius": 18, "count": 16, "mode": "SOCIAL", "minCombatLevel": 3, "maxCombatLevel": 70 },

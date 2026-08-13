@@ -62,11 +62,24 @@ ollama pull llama3.2:3b
 ```
 
 Keep Ollama running, then start Single RS 2012 normally. Public chat, private
-messages, and clan chat retain short per-bot conversation histories. The default
+messages, and clan chat retain per-bot conversation histories between restarts.
+Use `::ollamastatus` in game to see the endpoint, model, queue, and fallback
+state. Use `::ollamaforget` to erase your saved conversation memory. The default
 configuration is in `world/data/npcs/simulated-players.json` in a release, or
 `darkan-world-server/data/npcs/simulated-players.json` in a source checkout.
-Change `model`, `baseUrl`, or `enabled` under `ollama` there. Ollama is optional:
-if it is unavailable, bots immediately fall back to the built-in scripted replies.
+Change the model, endpoint, response delays, public/clan cooldowns, memory size,
+or persistence under `ollama` there. Requests to the same bot are serialized so
+rapid messages remain in order. Ollama is optional: if it is unavailable, bots
+immediately fall back to the built-in scripted replies.
+
+With the default `127.0.0.1` endpoint, prompts and the model stay on your computer.
+Conversation memory is stored locally in `saves/ollama-conversations.json` and is
+never included in release archives. A remote `baseUrl` sends messages to that
+remote service instead.
+
+Cross-platform launch validation lives in `.github/workflows/platform-smoke.yml`
+and runs the Java/cache/world/client/configuration smoke entry point on Linux,
+Windows, and Intel macOS.
 
 ## Release builds
 

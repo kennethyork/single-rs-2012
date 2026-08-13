@@ -1,0 +1,51 @@
+name: Platform smoke tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "darkan-world-server/**"
+      - "darkan-client/**"
+      - ".github/workflows/platform-smoke.yml"
+
+jobs:
+  smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "24"
+          cache: gradle
+      - name: Build runnable jars
+        shell: bash
+        run: |
+          chmod +x darkan-world-server/gradlew darkan-client/gradlew
+          (cd darkan-world-server && ./gradlew shadowJar)
+          (cd darkan-client && ./gradlew shadowJar)
+      - name: Create smoke-test cache marker
+        shell: bash
+        run: |
+          mkdir -p smoke-cache
+          touch smoke-cache/main_file_cache.dat2
+      - name: Launch smoke test (Unix)
+        if: runner.os != 'Windows'
+        working-directory: darkan-world-server
+        run: >-
+          java -Ddarkan.cache.path="${{ github.workspace }}/smoke-cache"
+          -cp "build/libs/world-server-2.0.12-all.jar:../darkan-client/build/libs/darkan-client-shaded-1.0.1-all.jar"
+          com.rs.SinglePlayerLauncher --smoke-test
+      - name: Launch smoke test (Windows)
+        if: runner.os == 'Windows'
+        working-directory: darkan-world-server
+        shell: pwsh
+        run: >-
+          java "-Ddarkan.cache.path=${{ github.workspace }}\smoke-cache"
+          -cp "build\libs\world-server-2.0.12-all.jar;..\darkan-client\build\libs\darkan-client-shaded-1.0.1-all.jar"
+          com.rs.SinglePlayerLauncher --smoke-test

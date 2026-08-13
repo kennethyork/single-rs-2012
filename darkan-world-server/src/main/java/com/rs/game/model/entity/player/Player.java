@@ -78,6 +78,7 @@ import com.rs.game.content.tutorialisland.GamemodeSelection;
 import com.rs.game.content.tutorialisland.TutorialIslandController;
 import com.rs.game.content.world.MusicianKt;
 import com.rs.game.content.world.npcs.SimulatedPlayerSocial;
+import com.rs.game.content.world.npcs.SimulatedPlayerOllama;
 import com.rs.game.ge.GE;
 import com.rs.game.ge.Offer;
 import com.rs.game.map.ChunkManager;
@@ -1225,7 +1226,10 @@ public class Player extends Entity {
 		lastIP = getSession().getIP();
 		interfaceManager.sendInterfaces();
 		if (Settings.getConfig().isSinglePlayer())
+		{
 			SimulatedPlayerSocial.restoreSocialState(this);
+			SimulatedPlayerOllama.sendStartupStatus(this);
+		}
 		getPackets().sendRunEnergy(runEnergy);
 		refreshAllowChatEffects();
 		refreshMouseButtons();
