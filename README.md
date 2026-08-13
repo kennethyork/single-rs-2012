@@ -100,6 +100,8 @@ Useful in-game commands:
 | `::ollamaforget` | Delete your saved AI conversation memory |
 
 Before switching, install that model in a terminal with `ollama pull model-name`.
+You can switch while the game is running; the next bot reply uses the new model
+without restarting the client or world.
 The in-game choice is stored in `saves/ollama-model.json`, so updating the game
 does not overwrite it.
 
