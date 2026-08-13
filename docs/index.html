@@ -78,6 +78,17 @@
           <li><strong>Wilderness players</strong> &mdash; the 88 PK bots are the only population bots that can attack or be attacked</li>
           <li><strong>Activity helpers</strong> for bosses, Dungeoneering, and Pest Control stay activity-specific: no XP, no drops, no saved accounts</li>
         </ul>
+
+        <h3>Optional Ollama conversations</h3>
+        <p>Scripted bot conversations work without extra software. For open-ended local AI replies, install Ollama, then download the default model once:</p>
+        <p><code>ollama pull qwen3.5:4b</code> <button class="copy" type="button" data-copy="ollama pull qwen3.5:4b">Copy</button></p>
+        <ul>
+          <li><code>::ollamastatus</code> checks whether Ollama and the selected model are available</li>
+          <li><code>::ollamamodel</code> shows the current model and suggestions</li>
+          <li><code>::ollamamodel qwen3.5:4b</code> switches models while playing; the next bot reply uses it without a restart</li>
+          <li><code>::ollamamodel reset</code> restores the configured default</li>
+          <li>The selected model and conversation memory are saved locally between sessions</li>
+        </ul>
       </div>
     </section>
 
@@ -88,7 +99,6 @@
         <h3>Linux</h3>
         <ul>
           <li>Download the ready-to-run <a href="https://github.com/kennethyork/single-rs-2012/releases/latest">latest release from GitHub</a>, then extract the archive</li>
-          <li>Build once from source: <code>./build-offline.sh</code> <button class="copy" type="button" data-copy="./build-offline.sh">Copy</button> (release archives already include the jars)</li>
           <li>Play at normal rates: <code>./run.sh</code> <button class="copy" type="button" data-copy="./run.sh">Copy</button></li>
           <li>Play at a boosted rate: <code>./run.sh 25</code> <button class="copy" type="button" data-copy="./run.sh 25">Copy</button> or <code>./run.sh 50</code> <button class="copy" type="button" data-copy="./run.sh 50">Copy</button></li>
         </ul>
@@ -96,7 +106,6 @@
         <h3>Windows</h3>
         <ul>
           <li>Download the ready-to-run <a href="https://github.com/kennethyork/single-rs-2012/releases/latest">latest release from GitHub</a>, choose the Windows x64 ZIP, then extract it</li>
-          <li>Build once from source: <code>build-offline.bat</code></li>
           <li>Play at normal rates: <code>run.bat</code></li>
           <li>Play at a boosted rate: <code>run.bat 25</code> or <code>run.bat 50</code></li>
         </ul>
