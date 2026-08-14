@@ -44,7 +44,7 @@ object SimulatedPlayerSocialCommands {
         Commands.add(Rights.PLAYER, "exporthighscores,websitehighscores", "Exports local player and bot highscores for the website.") { player, _ ->
             val file = SimulatedPlayerHighscores.export(player)
             player.sendMessage("Exported ${SimulatedPlayerPopulationManager.activeCount() + 1} highscore entries to <col=00ffff>${file.absolutePath}</col>.")
-            player.sendMessage("Open the Single RS 2012 website and choose this file in its Local Highscores section. The file stays on your computer.")
+            player.sendMessage("The website can remember this local file and refresh it automatically. Nothing is uploaded.")
         }
         Commands.add(Rights.PLAYER, "botgroup,activitygroup [create/skill/status/leave/disband]", "Manages your simulated-player activity group.") { player, args ->
             when (args.firstOrNull()?.lowercase()) {

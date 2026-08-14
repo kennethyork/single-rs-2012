@@ -103,23 +103,24 @@
     <section id="highscores" class="highscores">
       <div class="container">
         <h2>Local Highscores</h2>
-        <p>In game, enter <code>::exporthighscores</code>. Then select <code>saves/highscores-export.json</code> below. Your character and bot rankings are read only by this browser and are never uploaded.</p>
+        <p>The game refreshes <code>saves/highscores-export.json</code> automatically every 30 seconds. Connect that file once and this page remembers it, then reloads current character and bot stats while the game is running. Your rankings are read only by this browser and are never uploaded.</p>
         <div class="highscore-controls">
-          <label class="file-button" for="highscore-file">Choose highscore export</label>
+          <button class="file-button" id="highscore-connect" type="button">Connect live highscores</button>
+          <label class="file-button" id="highscore-fallback" for="highscore-file">Choose highscore export</label>
           <input id="highscore-file" type="file" accept="application/json,.json" />
           <label for="highscore-skill">Ranking</label>
           <select id="highscore-skill" disabled>
             <option value="overall">Overall</option>
           </select>
         </div>
-        <p id="highscore-summary" class="highscore-summary" role="status">No local highscore file loaded.</p>
+        <p id="highscore-summary" class="highscore-summary" role="status">Connect your local highscore file once to enable automatic updates.</p>
         <div class="highscore-table-wrap">
           <table class="highscore-table">
             <thead>
               <tr><th>Rank</th><th>Player</th><th>Type</th><th>Level</th><th>XP</th></tr>
             </thead>
             <tbody id="highscore-body">
-              <tr><td colspan="5" class="highscore-empty">Export your highscores in game, then choose the JSON file.</td></tr>
+              <tr><td colspan="5" class="highscore-empty">Start the game, then connect saves/highscores-export.json.</td></tr>
             </tbody>
           </table>
         </div>

@@ -119,16 +119,21 @@ bots gather around and follow you while carrying out the selected routine.
 ## Website highscores
 
 The website includes a private local highscore viewer for your character and
-the persistent simulated-player population. In game, enter:
+the persistent simulated-player population. The game automatically refreshes
+`saves/highscores-export.json` during its normal 30-second save. On the website,
+choose **Connect live highscores** and approve that file once. Supported desktop
+browsers remember the file and automatically reload current stats while the game
+is running. The browser reads the JSON locally; it is never sent to a server.
+
+You can also force an immediate refresh in game with:
 
 ```text
 ::exporthighscores
 ```
 
-This writes `saves/highscores-export.json`. Open the project website, find
-**Local Highscores**, and choose that file. You can rank the export overall or
-by any of the 25 skills. The browser reads the JSON locally; it is never sent to
-a server. Run the command again whenever you want a fresh snapshot.
+You can rank the live export overall or by any of the 25 skills. Browsers without
+the persistent file-access feature retain a manual **Choose highscore export**
+fallback.
 
 Right-click a simulated player for its social options:
 

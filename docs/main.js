@@ -29,12 +29,18 @@ document.querySelectorAll('.gallery img').forEach(img => {
 document.querySelector('#year').textContent = new Date().getFullYear();
 
 const highscoreFile = document.querySelector('#highscore-file');
+const highscoreConnect = document.querySelector('#highscore-connect');
+const highscoreFallback = document.querySelector('#highscore-fallback');
 const highscoreSkill = document.querySelector('#highscore-skill');
 const highscoreSummary = document.querySelector('#highscore-summary');
 const highscoreBody = document.querySelector('#highscore-body');
 let highscoreData = null;
+let liveHighscoreHandle = null;
+let highscoreModifiedAt = 0;
+let highscoreRefreshTimer = null;
 
 const numberFormat = new Intl.NumberFormat();
+const supportsLiveHighscores = 'showOpenFilePicker' in window && 'indexedDB' in window;
 
 function renderHighscores() {
   if (!highscoreData) return;
@@ -66,9 +72,7 @@ function renderHighscores() {
   }));
 }
 
-highscoreFile.addEventListener('change', async () => {
-  const file = highscoreFile.files[0];
-  if (!file) return;
+async function loadHighscoreFile(file, live = false) {
   try {
     const parsed = JSON.parse(await file.text());
     if (parsed.formatVersion !== 1 || !Array.isArray(parsed.skills) || !Array.isArray(parsed.entries)) {
@@ -84,7 +88,10 @@ highscoreFile.addEventListener('change', async () => {
     highscoreSkill.disabled = false;
     const generated = new Date(parsed.generatedAt);
     const generatedLabel = Number.isNaN(generated.valueOf()) ? 'unknown time' : generated.toLocaleString();
-    highscoreSummary.textContent = `Loaded ${parsed.entries.length} local entries generated ${generatedLabel}. Nothing was uploaded.`;
+    highscoreSummary.textContent = live
+      ? `Live: ${parsed.entries.length} local entries, last game update ${generatedLabel}. Refreshing automatically; nothing is uploaded.`
+      : `Loaded ${parsed.entries.length} local entries generated ${generatedLabel}. Nothing was uploaded.`;
+    highscoreModifiedAt = file.lastModified;
     renderHighscores();
   } catch (error) {
     highscoreData = null;
@@ -92,6 +99,103 @@ highscoreFile.addEventListener('change', async () => {
     highscoreSummary.textContent = `Could not load ${file.name}: ${error.message}`;
     highscoreBody.innerHTML = '<tr><td colspan="5" class="highscore-empty">Choose a valid Single RS 2012 highscore export.</td></tr>';
   }
+}
+
+function openHighscoreDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('single-rs-2012-highscores', 1);
+    request.onupgradeneeded = () => request.result.createObjectStore('files');
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function saveHighscoreHandle(handle) {
+  const database = await openHighscoreDatabase();
+  await new Promise((resolve, reject) => {
+    const request = database.transaction('files', 'readwrite').objectStore('files').put(handle, 'live-export');
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+  database.close();
+}
+
+async function getSavedHighscoreHandle() {
+  const database = await openHighscoreDatabase();
+  const handle = await new Promise((resolve, reject) => {
+    const request = database.transaction('files').objectStore('files').get('live-export');
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => reject(request.error);
+  });
+  database.close();
+  return handle;
+}
+
+async function refreshLiveHighscores(requestAccess = false) {
+  if (!liveHighscoreHandle) return;
+  let permission = await liveHighscoreHandle.queryPermission({ mode: 'read' });
+  if (permission !== 'granted' && requestAccess) {
+    permission = await liveHighscoreHandle.requestPermission({ mode: 'read' });
+  }
+  if (permission !== 'granted') {
+    highscoreSummary.textContent = 'Click Connect live highscores to restore access to the remembered file.';
+    return;
+  }
+  const file = await liveHighscoreHandle.getFile();
+  if (!highscoreData || file.lastModified !== highscoreModifiedAt) await loadHighscoreFile(file, true);
+}
+
+function startLiveHighscoreRefresh() {
+  window.clearInterval(highscoreRefreshTimer);
+  highscoreRefreshTimer = window.setInterval(() => {
+    refreshLiveHighscores().catch(error => {
+      highscoreSummary.textContent = `Live highscore refresh failed: ${error.message}`;
+    });
+  }, 10_000);
+}
+
+highscoreConnect.addEventListener('click', async () => {
+  try {
+    if (!supportsLiveHighscores) {
+      highscoreFile.click();
+      return;
+    }
+    if (!liveHighscoreHandle) {
+      [liveHighscoreHandle] = await window.showOpenFilePicker({
+        multiple: false,
+        types: [{ description: 'Single RS 2012 highscores', accept: { 'application/json': ['.json'] } }]
+      });
+      await saveHighscoreHandle(liveHighscoreHandle);
+    }
+    await refreshLiveHighscores(true);
+    startLiveHighscoreRefresh();
+  } catch (error) {
+    if (error.name !== 'AbortError') highscoreSummary.textContent = `Could not connect live highscores: ${error.message}`;
+  }
+});
+
+highscoreFile.addEventListener('change', async () => {
+  const file = highscoreFile.files[0];
+  if (file) await loadHighscoreFile(file);
 });
 
 highscoreSkill.addEventListener('change', renderHighscores);
+
+if (supportsLiveHighscores) {
+  highscoreFallback.hidden = true;
+  getSavedHighscoreHandle().then(async handle => {
+    if (!handle) return;
+    liveHighscoreHandle = handle;
+    await refreshLiveHighscores();
+    startLiveHighscoreRefresh();
+  }).catch(() => {
+    highscoreSummary.textContent = 'Connect the local highscore file to enable automatic updates.';
+  });
+} else {
+  highscoreConnect.textContent = 'Choose highscore export';
+  highscoreFallback.hidden = true;
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && liveHighscoreHandle) refreshLiveHighscores().catch(() => {});
+});

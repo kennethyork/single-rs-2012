@@ -30,10 +30,11 @@ object SimulatedPlayerHighscores {
     private const val EXPORT_FILE = "highscores-export.json"
     private val gson = GsonBuilder().setPrettyPrinting().create()
 
-    fun export(requestingPlayer: Player): File {
+    @JvmStatic
+    @Synchronized
+    fun export(): File {
         val livePlayers = World.players
             .filter { !it.hasFinished() && it.hasStarted() }
-            .plus(requestingPlayer)
             .plus(SimulatedPlayerPopulationManager.activeBots())
             .distinctBy { it.username.lowercase() }
 
@@ -59,5 +60,12 @@ object SimulatedPlayerHighscores {
         )
         LocalFileStore.writeAtomic(EXPORT_FILE, gson.toJson(export))
         return LocalFileStore.file(EXPORT_FILE)
+    }
+
+    fun export(requestingPlayer: Player): File {
+        // Keep the command API explicit while the normal 30-second save now
+        // refreshes this same file automatically.
+        check(requestingPlayer.hasStarted()) { "Only a started player can request a highscore export" }
+        return export()
     }
 }

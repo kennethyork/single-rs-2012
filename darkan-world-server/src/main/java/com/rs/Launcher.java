@@ -26,6 +26,7 @@ import com.rs.db.WorldDB;
 import com.rs.engine.thread.AsyncTaskExecutor;
 import com.rs.engine.thread.WorldThread;
 import com.rs.game.World;
+import com.rs.game.content.world.npcs.SimulatedPlayerHighscores;
 import com.rs.game.map.ChunkManager;
 import com.rs.game.model.entity.player.Controller;
 import com.rs.game.model.entity.player.Player;
@@ -157,6 +158,7 @@ public final class Launcher {
 			WorldDB.getPlayers().saveSync(player);
 		}
 		WorldPersistentData.save();
+		exportWebsiteHighscores();
 	}
 
 	public static void saveFilesAsync() {
@@ -166,6 +168,17 @@ public final class Launcher {
 			WorldDB.getPlayers().save(player);
 		}
 		WorldPersistentData.save();
+		exportWebsiteHighscores();
+	}
+
+	private static void exportWebsiteHighscores() {
+		if (!Settings.getConfig().isSinglePlayer())
+			return;
+		try {
+			SimulatedPlayerHighscores.export();
+		} catch (Throwable e) {
+			Logger.handle(Launcher.class, "exportWebsiteHighscores", "Error exporting website highscores", e);
+		}
 	}
 
 	public static void cleanMemory(boolean force) {
