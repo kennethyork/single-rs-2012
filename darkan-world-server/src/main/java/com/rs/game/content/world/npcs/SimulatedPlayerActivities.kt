@@ -47,6 +47,7 @@ object SimulatedPlayerActivityManager {
     private val defaultGroups = mutableMapOf<String, ActivityGroup>()
     private val playerGroups = mutableMapOf<String, ActivityGroup>()
     private val memberIndex = mutableMapOf<String, Int>()
+    private val soloActivities = mutableMapOf<String, BotActivity>()
     private var loaded = false
     private var dirty = false
     private var lastSaveTick = 0L
@@ -94,10 +95,16 @@ object SimulatedPlayerActivityManager {
         defaultGroups.clear()
         playerGroups.clear()
         memberIndex.clear()
+        soloActivities.clear()
         val size = SimulatedPlayerPopulationManager.activitySettings.groupSize.coerceIn(2, 8)
         val labels = listOf("Adventurers", "Training Crew", "Regulars", "Wayfarers", "Skill Team", "Raid Friends")
         bots.groupBy { it.definition.location.ifBlank { "Gielinor" } }.forEach { (region, regionalBots) ->
-            regionalBots.chunked(size).forEachIndexed { groupIndex, members ->
+            val soloBots = regionalBots.filterIndexed { index, _ -> index % (size + 1) == 0 }.toMutableList()
+            regionalBots.filterNot(soloBots::contains).chunked(size).forEachIndexed { groupIndex, members ->
+                if (members.size < 2) {
+                    soloBots += members
+                    return@forEachIndexed
+                }
                 val leader = members.first()
                 val activity = if (leader.definition.mode == SimulatedPlayerMode.PK)
                     BotActivity(Skills.ATTACK, "Wilderness patrol", 422, "patrols the Wilderness")
@@ -109,8 +116,13 @@ object SimulatedPlayerActivityManager {
                     memberIndex[bot.username.lowercase()] = index
                 }
             }
+            soloBots.forEach { bot ->
+                soloActivities[bot.username.lowercase()] = if (bot.definition.mode == SimulatedPlayerMode.PK)
+                    BotActivity(Skills.ATTACK, "solo Wilderness patrol", 422, "patrols the Wilderness alone")
+                else activities[bot.personality.favoriteSkill] ?: activities.getValue("Fishing")
+            }
         }
-        Logger.info(javaClass, "initialize", "Organized ${bots.size} simulated players into ${groups.values.distinct().size} activity groups")
+        Logger.info(javaClass, "initialize", "Organized ${bots.size} simulated players into ${groups.values.distinct().size} activity groups and ${soloActivities.size} solo routines")
     }
 
     fun controlsMovement(bot: SimulatedPlayerBot): Boolean =
@@ -119,10 +131,16 @@ object SimulatedPlayerActivityManager {
     fun process(bot: SimulatedPlayerBot, seed: Int) {
         val settings = SimulatedPlayerPopulationManager.activitySettings
         if (!settings.enabled || bot.inCombat()) return
-        val group = groups[bot.username.lowercase()] ?: return
+        val key = bot.username.lowercase()
+        val group = groups[key]
+        if (group == null) {
+            soloActivities[key]?.let { performActivity(bot, null, it, settings, seed) }
+            maybeSave(settings)
+            return
+        }
         val index = memberIndex[bot.username.lowercase()] ?: 0
         val cycle = phase(group, bot.tickCounter)
-        val target = formationTile(anchorFor(group), index, if (cycle == 2) 4 else 0)
+        val target = movementTarget(anchorFor(group), index, cycle, bot.tickCounter, seed)
 
         if (Utils.getDistance(bot.tile, target) > 2) {
             if (bot.tickCounter % 6L == (seed % 6).toLong()) {
@@ -146,7 +164,8 @@ object SimulatedPlayerActivityManager {
     }
 
     fun status(bot: SimulatedPlayerBot): String {
-        val group = groups[bot.username.lowercase()] ?: return "wandering"
+        val key = bot.username.lowercase()
+        val group = groups[key] ?: return soloActivities[key]?.let { "${it.name} (solo)" } ?: "wandering"
         return when (phase(group, bot.tickCounter)) {
             0 -> "meeting and banking with ${group.name}"
             1 -> group.activity.name
@@ -252,10 +271,17 @@ object SimulatedPlayerActivityManager {
             player.sendMessage("You do not own an activity group.")
             return
         }
-        group.members.forEach { bot -> defaultGroups[bot.username.lowercase()]?.let { default ->
-            groups[bot.username.lowercase()] = default
-            memberIndex[bot.username.lowercase()] = default.members.indexOf(bot).coerceAtLeast(0)
-        } }
+        group.members.forEach { bot ->
+            val key = bot.username.lowercase()
+            val default = defaultGroups[key]
+            if (default != null) {
+                groups[key] = default
+                memberIndex[key] = default.members.indexOf(bot).coerceAtLeast(0)
+            } else {
+                groups.remove(key)
+                memberIndex.remove(key)
+            }
+        }
         player.set(PLAYER_GROUP_NAME_KEY, "")
         player.set(PLAYER_GROUP_BOTS_KEY, "")
         player.set(PLAYER_GROUP_SKILL_KEY, "")
@@ -298,7 +324,7 @@ object SimulatedPlayerActivityManager {
         }
     }
 
-    private fun performActivity(bot: SimulatedPlayerBot, group: ActivityGroup, activity: BotActivity, settings: SimulatedPlayerActivitySettings, seed: Int) {
+    private fun performActivity(bot: SimulatedPlayerBot, group: ActivityGroup?, activity: BotActivity, settings: SimulatedPlayerActivitySettings, seed: Int) {
         val interval = settings.actionIntervalTicks.coerceIn(4, 30)
         if (bot.tickCounter % interval.toLong() != Math.floorMod(seed, interval).toLong()) return
         val oldLevel = bot.skills.getLevelForXp(activity.skill)
@@ -311,9 +337,15 @@ object SimulatedPlayerActivityManager {
         state.actions++
         dirty = true
         if (newLevel > oldLevel) {
+            if (activity.skill == Skills.ATTACK || activity.skill == Skills.STRENGTH ||
+                activity.skill == Skills.DEFENSE || activity.skill == Skills.HITPOINTS ||
+                activity.skill == Skills.RANGE || activity.skill == Skills.PRAYER ||
+                activity.skill == Skills.MAGIC || activity.skill == Skills.SUMMONING) {
+                bot.appearance.generateAppearanceData()
+            }
             bot.spotAnim(2456)
         }
-        if (bot === effectiveMembers(group).firstOrNull()) trainParticipatingPlayers(group, activity, settings)
+        if (group != null && bot === effectiveMembers(group).firstOrNull()) trainParticipatingPlayers(group, activity, settings)
     }
 
     private fun installPlayerGroup(player: Player, name: String, bots: List<SimulatedPlayerBot>, activity: BotActivity) {
@@ -345,9 +377,14 @@ object SimulatedPlayerActivityManager {
     private fun removeFromPlayerGroup(player: Player, bot: SimulatedPlayerBot) {
         val current = playerGroups[player.username.lowercase()] ?: return
         val bots = current.members.filterNot { it.username.equals(bot.username, true) }
-        defaultGroups[bot.username.lowercase()]?.let { default ->
-            groups[bot.username.lowercase()] = default
-            memberIndex[bot.username.lowercase()] = default.members.indexOf(bot).coerceAtLeast(0)
+        val key = bot.username.lowercase()
+        val default = defaultGroups[key]
+        if (default != null) {
+            groups[key] = default
+            memberIndex[key] = default.members.indexOf(bot).coerceAtLeast(0)
+        } else {
+            groups.remove(key)
+            memberIndex.remove(key)
         }
         installPlayerGroup(player, current.name, bots, current.activity)
         savePlayerBots(player, bots)
@@ -409,6 +446,27 @@ object SimulatedPlayerActivityManager {
         val offsets = arrayOf(0 to 0, 2 to 0, 0 to 2, 2 to 2, -2 to 0, 0 to -2, -2 to -2, 2 to -2)
         val (x, y) = offsets[index % offsets.size]
         return Tile.of(anchor.x + x + bankOffset, anchor.y + y, anchor.plane)
+    }
+
+    private fun movementTarget(anchor: Tile, index: Int, cycle: Int, tick: Long, seed: Int): Tile {
+        // Activity-group membership used to suppress normal wandering and leave every bot
+        // standing on its formation tile. Move each member around a small, deterministic
+        // circuit so every phase remains visibly active without scattering the group.
+        val formation = formationTile(anchor, index, if (cycle == 2) 4 else 0)
+        val radius = if (cycle == 1) 4 else 3
+        val offsets = arrayOf(
+            radius to 0,
+            radius to radius,
+            0 to radius,
+            -radius to radius,
+            -radius to 0,
+            -radius to -radius,
+            0 to -radius,
+            radius to -radius
+        )
+        val step = Math.floorMod((tick / 18L).toInt() + index * 2 + seed, offsets.size)
+        val (x, y) = offsets[step]
+        return Tile.of(formation.x + x, formation.y + y, formation.plane)
     }
 
     private fun loadProgress() {

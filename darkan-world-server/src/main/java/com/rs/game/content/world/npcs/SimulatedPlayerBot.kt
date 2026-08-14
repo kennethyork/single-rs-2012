@@ -84,8 +84,16 @@ class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(sim
 
     fun showStatsTo(viewer: Player) {
         val equipmentNames = equipment.itemsCopy.filterNotNull().take(8).joinToString(", ") { it.definitions.name }
+        val baseCombat = skills.combatLevel
+        val combatWithSummoning = skills.combatLevelWithSummoning
+        val combatDisplay = if (World.isPvpArea(this)) {
+            val summoningDifference = combatWithSummoning - baseCombat
+            if (summoningDifference > 0) "$baseCombat (+$summoningDifference with Summoning)" else "$baseCombat"
+        } else {
+            "$combatWithSummoning"
+        }
         viewer.sendMessage("<col=00ffff>${displayName}'s player profile</col>")
-        viewer.sendMessage("Combat: ${skills.combatLevelWithSummoning}  Total level: ${skills.totalLevel}")
+        viewer.sendMessage("Combat: $combatDisplay  Total level: ${skills.totalLevel}")
         viewer.sendMessage("Clan: ${social.clanName ?: "None"}")
         viewer.sendMessage("Personality: ${personality.title}; ${personality.temperament}, ${personality.speechStyle}")
         viewer.sendMessage("Favorites: ${personality.favoriteSkill} and ${personality.favoriteActivity}")

@@ -45,7 +45,7 @@ text is ignored. The username `root` has access to owner commands.
   combat levels, persistent progression, and visible daily routines
 - Social players throughout towns, Daemonheim, and the Grand Exchange
 - Public chat, private messages, bot-to-bot chatter, and persistent clans
-- Regional bot groups that meet, train, bank, rest, and progress together
+- A mix of solo bots and regional groups that move, train, rest, and progress
 - A Player Marketplace for direct trading with simulated players
 - 88 attackable Wilderness PK bots
 - Activity helpers for bosses, Dungeoneering, and Pest Control
@@ -73,13 +73,17 @@ therefore still sound different from other players in the same broad role.
 The same identity also guides Ollama replies, so a bot remains recognizable
 across public, private, and clan conversations and after restarting the game.
 
-The population also lives instead of only standing at spawn. Town players form
-stable regional groups of up to four and cycle between gathering, training a
-shared skill, banking, and resting. Their recognizable skilling and combat
-animations are visible to nearby players, their skill XP increases gradually,
-and their new levels survive restarts in the local world save. Inspect a player
-to see its current activity, group, leader, and personal goal. Wilderness groups
-patrol and PK together instead of performing town skilling routines.
+The population also lives instead of only standing at spawn. Most town players
+form stable regional groups of up to four and cycle between gathering, training
+a shared skill, banking, and resting. Roughly one player in five follows an
+independent routine instead: it wanders locally, performs its personality's
+favorite activity, gains skill XP, and can still be recruited into your group.
+Recognizable skilling and combat animations are visible to nearby players, and
+new levels survive restarts in the local world save. Inspect a player to see its
+current activity, group, accurate combat level, and personal goal. Combat
+level-ups refresh the visible player level immediately, including the base and
+Summoning adjustment shown in the Wilderness. Wilderness groups patrol and PK
+together instead of performing town skilling routines.
 
 Use `::botgroups` to list up to eight groups within 32 tiles and see whether
 each group is meeting, training, or resting. Group membership and progression
@@ -101,7 +105,8 @@ To lead your own persistent group, use these commands:
 | `::botgroup disband` | Disband the group you lead |
 
 After creating one, choose **Group options** on bots to invite them. Choose it
-again on one of your members to send that bot back to its regional team. You can
+again on one of your members to send that bot back to its regional team or solo
+routine. You can
 lead up to seven bots, making eight group members including you. Your invited
 bots gather around and follow you while carrying out the selected routine.
 
