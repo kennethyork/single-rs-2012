@@ -134,7 +134,8 @@ You can also force an immediate refresh in game with:
 
 You can rank the live export overall or by any of the 25 skills. Browsers without
 the persistent file-access feature retain a manual **Choose highscore export**
-fallback.
+fallback. Search by display name or username, then click any character or bot to
+open its complete combat, total-level, total-XP, and 25-skill profile.
 
 Right-click a simulated player for its social options:
 

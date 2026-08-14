@@ -112,8 +112,11 @@
           <select id="highscore-skill" disabled>
             <option value="overall">Overall</option>
           </select>
+          <label for="highscore-search">Find player</label>
+          <input id="highscore-search" type="search" placeholder="Name or username" autocomplete="off" disabled />
         </div>
         <p id="highscore-summary" class="highscore-summary" role="status">Connect your local highscore file once to enable automatic updates.</p>
+        <p id="highscore-results" class="highscore-results" role="status"></p>
         <div class="highscore-table-wrap">
           <table class="highscore-table">
             <thead>
@@ -124,6 +127,21 @@
             </tbody>
           </table>
         </div>
+        <section id="highscore-profile" class="highscore-profile" aria-labelledby="highscore-profile-name" hidden>
+          <div class="highscore-profile-heading">
+            <div>
+              <h3 id="highscore-profile-name"></h3>
+              <p id="highscore-profile-summary"></p>
+            </div>
+            <button id="highscore-profile-close" class="file-button" type="button">Close profile</button>
+          </div>
+          <div class="highscore-table-wrap">
+            <table class="highscore-table highscore-skill-table">
+              <thead><tr><th>Skill</th><th>Level</th><th>XP</th></tr></thead>
+              <tbody id="highscore-profile-skills"></tbody>
+            </table>
+          </div>
+        </section>
       </div>
     </section>
 

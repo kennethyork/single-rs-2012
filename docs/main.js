@@ -32,9 +32,17 @@ const highscoreFile = document.querySelector('#highscore-file');
 const highscoreConnect = document.querySelector('#highscore-connect');
 const highscoreFallback = document.querySelector('#highscore-fallback');
 const highscoreSkill = document.querySelector('#highscore-skill');
+const highscoreSearch = document.querySelector('#highscore-search');
 const highscoreSummary = document.querySelector('#highscore-summary');
+const highscoreResults = document.querySelector('#highscore-results');
 const highscoreBody = document.querySelector('#highscore-body');
+const highscoreProfile = document.querySelector('#highscore-profile');
+const highscoreProfileName = document.querySelector('#highscore-profile-name');
+const highscoreProfileSummary = document.querySelector('#highscore-profile-summary');
+const highscoreProfileSkills = document.querySelector('#highscore-profile-skills');
+const highscoreProfileClose = document.querySelector('#highscore-profile-close');
 let highscoreData = null;
+let selectedHighscoreUsername = null;
 let liveHighscoreHandle = null;
 let highscoreModifiedAt = 0;
 let highscoreRefreshTimer = null;
@@ -53,11 +61,27 @@ function renderHighscores() {
     const rightXp = skillIndex < 0 ? right.totalXp : right.xp[skillIndex];
     return rightLevel - leftLevel || rightXp - leftXp || left.displayName.localeCompare(right.displayName);
   });
+  const query = highscoreSearch.value.trim().toLocaleLowerCase();
+  const matches = query
+    ? ranked.filter(entry => entry.displayName.toLocaleLowerCase().includes(query) || entry.username.toLocaleLowerCase().includes(query))
+    : ranked;
+  highscoreResults.textContent = query
+    ? `${matches.length} player${matches.length === 1 ? '' : 's'} match “${highscoreSearch.value.trim()}”.`
+    : `Showing the top ${Math.min(matches.length, 100)} of ${matches.length} players. Click anyone to view every skill.`;
 
-  highscoreBody.replaceChildren(...ranked.slice(0, 100).map((entry, index) => {
+  if (matches.length === 0) {
+    highscoreBody.innerHTML = '<tr><td colspan="5" class="highscore-empty">No players match that search.</td></tr>';
+    return;
+  }
+
+  highscoreBody.replaceChildren(...matches.slice(0, 100).map(entry => {
     const row = document.createElement('tr');
+    row.className = 'highscore-row';
+    row.tabIndex = 0;
+    row.setAttribute('role', 'button');
+    row.setAttribute('aria-label', `View all stats for ${entry.displayName}`);
     const values = [
-      index + 1,
+      ranked.indexOf(entry) + 1,
       entry.displayName,
       entry.bot ? 'Bot' : 'Character',
       skillIndex < 0 ? entry.totalLevel : entry.levels[skillIndex],
@@ -68,8 +92,33 @@ function renderHighscores() {
       cell.textContent = value;
       row.append(cell);
     });
+    const openProfile = () => renderHighscoreProfile(entry);
+    row.addEventListener('click', openProfile);
+    row.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openProfile();
+      }
+    });
     return row;
   }));
+}
+
+function renderHighscoreProfile(entry, scroll = true) {
+  selectedHighscoreUsername = entry.username;
+  highscoreProfileName.textContent = entry.displayName;
+  highscoreProfileSummary.textContent = `${entry.bot ? 'Bot' : 'Character'} · Combat ${entry.combatLevel} · Total level ${numberFormat.format(entry.totalLevel)} · Total XP ${numberFormat.format(entry.totalXp)}`;
+  highscoreProfileSkills.replaceChildren(...highscoreData.skills.map((skill, index) => {
+    const row = document.createElement('tr');
+    [skill, entry.levels[index], numberFormat.format(entry.xp[index])].forEach(value => {
+      const cell = document.createElement('td');
+      cell.textContent = value;
+      row.append(cell);
+    });
+    return row;
+  }));
+  highscoreProfile.hidden = false;
+  if (scroll) highscoreProfile.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 async function loadHighscoreFile(file, live = false) {
@@ -79,13 +128,16 @@ async function loadHighscoreFile(file, live = false) {
       throw new Error('Unsupported highscore export format');
     }
     parsed.entries.forEach(entry => {
-      if (!entry || typeof entry.displayName !== 'string' || !Array.isArray(entry.levels) || !Array.isArray(entry.xp)) {
+      if (!entry || typeof entry.displayName !== 'string' || typeof entry.username !== 'string' ||
+          !Array.isArray(entry.levels) || !Array.isArray(entry.xp) ||
+          entry.levels.length < parsed.skills.length || entry.xp.length < parsed.skills.length) {
         throw new Error('Invalid highscore entry');
       }
     });
     highscoreData = parsed;
     highscoreSkill.replaceChildren(new Option('Overall', 'overall'), ...parsed.skills.map((name, index) => new Option(name, String(index))));
     highscoreSkill.disabled = false;
+    highscoreSearch.disabled = false;
     const generated = new Date(parsed.generatedAt);
     const generatedLabel = Number.isNaN(generated.valueOf()) ? 'unknown time' : generated.toLocaleString();
     highscoreSummary.textContent = live
@@ -93,9 +145,17 @@ async function loadHighscoreFile(file, live = false) {
       : `Loaded ${parsed.entries.length} local entries generated ${generatedLabel}. Nothing was uploaded.`;
     highscoreModifiedAt = file.lastModified;
     renderHighscores();
+    if (selectedHighscoreUsername) {
+      const selected = parsed.entries.find(entry => entry.username === selectedHighscoreUsername);
+      if (selected) renderHighscoreProfile(selected, false);
+      else highscoreProfile.hidden = true;
+    }
   } catch (error) {
     highscoreData = null;
     highscoreSkill.disabled = true;
+    highscoreSearch.disabled = true;
+    highscoreResults.textContent = '';
+    highscoreProfile.hidden = true;
     highscoreSummary.textContent = `Could not load ${file.name}: ${error.message}`;
     highscoreBody.innerHTML = '<tr><td colspan="5" class="highscore-empty">Choose a valid Single RS 2012 highscore export.</td></tr>';
   }
@@ -180,6 +240,11 @@ highscoreFile.addEventListener('change', async () => {
 });
 
 highscoreSkill.addEventListener('change', renderHighscores);
+highscoreSearch.addEventListener('input', renderHighscores);
+highscoreProfileClose.addEventListener('click', () => {
+  selectedHighscoreUsername = null;
+  highscoreProfile.hidden = true;
+});
 
 if (supportsLiveHighscores) {
   highscoreFallback.hidden = true;
