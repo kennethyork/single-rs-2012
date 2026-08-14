@@ -14,6 +14,7 @@ import com.rs.lib.model.clan.ClanRank
 import com.rs.lib.net.packets.encoders.social.ClanChannelFull
 import com.rs.lib.net.packets.encoders.social.ClanSettingsFull
 import com.rs.lib.net.packets.encoders.social.FriendStatus
+import com.rs.lib.util.Logger
 import com.rs.lib.util.Utils
 import java.util.concurrent.ConcurrentHashMap
 
@@ -69,6 +70,11 @@ object SimulatedPlayerSocial {
             if (!it.members.containsKey(player.username)) it.addMember(player.account, ClanRank.RECRUIT)
             player.social.setConnectedToClan(true)
             sendClanState(player, it)
+        }
+        try {
+            SimulatedPlayerHighscores.export(player)
+        } catch (error: Throwable) {
+            Logger.handle(javaClass, "restoreSocialState", "Unable to create the login highscore export", error)
         }
     }
 

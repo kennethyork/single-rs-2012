@@ -119,8 +119,9 @@ bots gather around and follow you while carrying out the selected routine.
 ## Website highscores
 
 The website includes a private local highscore viewer for your character and
-the persistent simulated-player population. The game automatically refreshes
-`saves/highscores-export.json` during its normal 30-second save. On the website,
+the persistent simulated-player population. The game creates
+`saves/highscores-export.json` when you log in and automatically refreshes it
+during its normal 30-second save. On the website,
 choose **Connect live highscores** and approve that file once. Supported desktop
 browsers remember the file and automatically reload current stats while the game
 is running. The browser reads the JSON locally; it is never sent to a server.
