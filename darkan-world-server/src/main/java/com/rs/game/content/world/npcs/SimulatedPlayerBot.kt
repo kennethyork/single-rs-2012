@@ -124,8 +124,10 @@ class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(sim
         viewer.sendMessage("Current goal: ${personality.currentGoal}")
         viewer.sendMessage("Activity: ${SimulatedPlayerActivityManager.status(this)}")
         viewer.sendMessage("Group: ${SimulatedPlayerActivityManager.groupDescription(this)}")
-        viewer.sendMessage("Attack ${skills.getLevelForXp(Constants.ATTACK)}, Strength ${skills.getLevelForXp(Constants.STRENGTH)}, Defence ${skills.getLevelForXp(Constants.DEFENSE)}, Constitution ${skills.getLevelForXp(Constants.HITPOINTS)}")
-        viewer.sendMessage("Ranged ${skills.getLevelForXp(Constants.RANGE)}, Magic ${skills.getLevelForXp(Constants.MAGIC)}, Prayer ${skills.getLevelForXp(Constants.PRAYER)}, Summoning ${skills.getLevelForXp(Constants.SUMMONING)}")
+        Constants.SKILL_NAME.indices
+            .map { skill -> "${Constants.SKILL_NAME[skill]} ${skills.getLevelForXp(skill)}" }
+            .chunked(5)
+            .forEach { line -> viewer.sendMessage(line.joinToString(", ")) }
         viewer.sendMessage("Equipment: ${equipmentNames.ifEmpty { "None" }}")
     }
 
@@ -150,13 +152,54 @@ class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(sim
         for (skill in 0 until Constants.SKILL_NAME.size) {
             val level = when (skill) {
                 Constants.ATTACK, Constants.STRENGTH, Constants.DEFENSE, Constants.HITPOINTS,
-                Constants.RANGE, Constants.MAGIC, Constants.PRAYER, Constants.SUMMONING -> base
+                Constants.RANGE, Constants.MAGIC, Constants.PRAYER, Constants.SUMMONING -> combatSkillLevel(skill, base)
                 else -> (1 + (seed + skill * 17) % base).coerceIn(1, 99)
             }
             skills.setXp(skill, Skills.getXPForLevel(level).toDouble())
             skills.set(skill, level)
         }
         hitpoints = maxHitpoints
+    }
+
+    private fun combatSkillLevel(skill: Int, base: Int): Int {
+        val scale = when (definition.style) {
+            Attack.MELEE -> when (skill) {
+                Constants.ATTACK -> 96
+                Constants.STRENGTH -> 110
+                Constants.DEFENSE -> 91
+                Constants.HITPOINTS -> 105
+                Constants.RANGE -> 58
+                Constants.MAGIC -> 52
+                Constants.PRAYER -> 58
+                Constants.SUMMONING -> 45
+                else -> 100
+            }
+            Attack.RANGE -> when (skill) {
+                Constants.ATTACK -> 58
+                Constants.STRENGTH -> 55
+                Constants.DEFENSE -> 92
+                Constants.HITPOINTS -> 105
+                Constants.RANGE -> 136
+                Constants.MAGIC -> 52
+                Constants.PRAYER -> 58
+                Constants.SUMMONING -> 45
+                else -> 100
+            }
+            Attack.ICE_BARRAGE -> when (skill) {
+                Constants.ATTACK -> 55
+                Constants.STRENGTH -> 52
+                Constants.DEFENSE -> 90
+                Constants.HITPOINTS -> 103
+                Constants.RANGE -> 56
+                Constants.MAGIC -> 136
+                Constants.PRAYER -> 62
+                Constants.SUMMONING -> 45
+                else -> 100
+            }
+        }
+        val jitter = Math.floorMod(seed / (skill + 3) + skill * 13, 11) - 5
+        val minimum = if (skill == Constants.HITPOINTS) 10 else 1
+        return ((base * (scale + jitter) + 50) / 100).coerceIn(minimum, 99)
     }
 
     private fun configureAppearance() {

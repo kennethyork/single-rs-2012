@@ -26,7 +26,8 @@ data class SimulatedPlayerActivitySettings(
 
 private data class SavedBotProgress(
     val xp: MutableMap<Int, Double> = mutableMapOf(),
-    var actions: Long = 0
+    var actions: Long = 0,
+    var statGeneration: Int = 2
 )
 
 private data class ActivityGroup(
@@ -117,11 +118,24 @@ object SimulatedPlayerActivityManager {
 
     fun restoreProgress(bot: SimulatedPlayerBot) {
         loadProgress()
-        progress[bot.username.lowercase()]?.xp?.forEach { (skill, xp) ->
-            if (skill in 0 until Skills.SIZE && xp > bot.skills.getXp(skill)) {
+        val state = progress[bot.username.lowercase()] ?: return
+        val legacyCombatLevel = (bot.definition.combatLevel * 0.72).toInt().coerceIn(3, 99)
+        val legacyCombatXp = Skills.getXPForLevel(legacyCombatLevel).toDouble()
+        val combatSkills = setOf(
+            Skills.ATTACK, Skills.STRENGTH, Skills.DEFENSE, Skills.HITPOINTS,
+            Skills.RANGE, Skills.MAGIC, Skills.PRAYER, Skills.SUMMONING
+        )
+        state.xp.forEach { (skill, xp) ->
+            val isLegacyBaseline = state.statGeneration < 2 && skill in combatSkills && xp <= legacyCombatXp
+            if (!isLegacyBaseline && skill in 0 until Skills.SIZE && xp > bot.skills.getXp(skill)) {
                 bot.skills.setXp(skill, xp)
                 bot.skills.set(skill, bot.skills.getLevelForXp(skill))
             }
+        }
+        if (state.statGeneration < 2) {
+            combatSkills.forEach { skill -> state.xp[skill] = bot.skills.getXp(skill) }
+            state.statGeneration = 2
+            dirty = true
         }
     }
 
@@ -456,7 +470,7 @@ object SimulatedPlayerActivityManager {
 
     private fun saveRealProgress(bot: SimulatedPlayerBot) {
         if (bot.tickCounter % 20L != 0L) return
-        val state = progress.getOrPut(bot.username.lowercase()) { SavedBotProgress() }
+        val state = progress.getOrPut(bot.username.lowercase()) { SavedBotProgress(statGeneration = 2) }
         var changed = false
         for (skill in 0 until Skills.SIZE) {
             val xp = bot.skills.getXp(skill)
