@@ -79,11 +79,13 @@ follows an independent routine. Bots search for actual nearby trees, rocks, and
 fishing spots, travel to them, and invoke the same woodcutting, mining, and
 fishing actions used by the human player. Tools, bait, skill requirements,
 inventory space, XP gains, depleted resources, and respawns therefore use the
-real game systems. When no valid resource is nearby, bots travel or search
-instead of standing still and looping an unrelated emote. Their new levels
-survive restarts in the local world save. Inspect a player to see its current
-real task, group, accurate combat level, and personal goal. Wilderness bots
-patrol and PK instead of selecting skilling tasks.
+real game systems. Spawn points and movement targets are collision checked,
+routes navigate around scenery, and idle bots recover from repeated route
+failures instead of becoming trapped in fences or objects. When no valid
+resource is nearby, bots travel or search instead of standing still and looping
+an unrelated emote. Their new levels survive restarts in the local world save.
+Inspect a player to see its current real task, group, accurate combat level, and
+personal goal. Wilderness bots patrol and PK instead of selecting skilling tasks.
 
 Use `::botgroups` to list up to eight groups within 32 tiles and see whether
 each group is meeting, training, or resting. Group membership and progression

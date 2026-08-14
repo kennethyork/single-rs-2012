@@ -56,6 +56,7 @@ object SimulatedPlayerActivityManager {
     private val soloActivities = mutableMapOf<String, BotActivity>()
     private val soloAnchors = mutableMapOf<String, Tile>()
     private val activeTaskDescriptions = mutableMapOf<String, String>()
+    private val failedMovementAttempts = mutableMapOf<String, Int>()
     private var loaded = false
     private var dirty = false
     private var lastSaveTick = 0L
@@ -132,6 +133,7 @@ object SimulatedPlayerActivityManager {
         soloActivities.clear()
         soloAnchors.clear()
         activeTaskDescriptions.clear()
+        failedMovementAttempts.clear()
         val size = SimulatedPlayerPopulationManager.activitySettings.groupSize.coerceIn(2, 8)
         val labels = listOf("Adventurers", "Training Crew", "Regulars", "Wayfarers", "Skill Team", "Raid Friends")
         bots.groupBy { it.definition.location.ifBlank { "Gielinor" } }.forEach { (region, regionalBots) ->
@@ -171,7 +173,7 @@ object SimulatedPlayerActivityManager {
         val settings = SimulatedPlayerPopulationManager.activitySettings
         if (!settings.enabled || bot.inCombat()) return
         val key = bot.username.lowercase()
-        if (bot.actionManager.action != null || bot.interactionManager.interaction != null) {
+        if (bot.actionManager.action != null || bot.interactionManager.interaction != null || bot.hasRouteEvent()) {
             saveRealProgress(bot)
             maybeSave(settings)
             return
@@ -182,8 +184,7 @@ object SimulatedPlayerActivityManager {
             if (!performActivity(bot, activity, settings, seed) && bot.tickCounter % 12L == (seed % 12).toLong()) {
                 val anchor = soloAnchors[key] ?: bot.tile
                 val target = soloMovementTarget(anchor, bot.tickCounter, seed)
-                bot.resetWalkSteps()
-                bot.addWalkSteps(target.x, target.y, 18, true)
+                queueSafeWalk(bot, target, seed, 18)
             }
             maybeSave(settings)
             return
@@ -194,8 +195,7 @@ object SimulatedPlayerActivityManager {
 
         if (Utils.getDistance(bot.tile, target) > 2) {
             if (bot.tickCounter % 6L == (seed % 6).toLong()) {
-                bot.resetWalkSteps()
-                bot.addWalkSteps(target.x, target.y, 25, true)
+                queueSafeWalk(bot, target, seed, 25)
             }
             maybeSave(settings)
             return
@@ -578,6 +578,34 @@ object SimulatedPlayerActivityManager {
         val step = Math.floorMod((tick / 18L).toInt() + seed, offsets.size)
         val (x, y) = offsets[step]
         return Tile.of(anchor.x + x, anchor.y + y, anchor.plane)
+    }
+
+    private fun queueSafeWalk(bot: SimulatedPlayerBot, preferred: Tile, seed: Int, maxSteps: Int): Boolean {
+        val key = bot.username.lowercase()
+        val target = safeSimulatedPlayerTile(preferred, seed + (bot.tickCounter / 6L).toInt(), 4)
+        if (target != null) {
+            bot.resetWalkSteps()
+            if (bot.calcFollow(target, maxSteps, true)) {
+                failedMovementAttempts.remove(key)
+                return true
+            }
+        }
+
+        bot.resetWalkSteps()
+        val failures = (failedMovementAttempts[key] ?: 0) + 1
+        failedMovementAttempts[key] = failures
+        if (failures < 3 || bot.inCombat() || bot.actionManager.action != null ||
+            bot.interactionManager.interaction != null || bot.hasRouteEvent()) return false
+
+        // Three separately timed route failures means the bot is enclosed or was spawned
+        // into changed scenery. Relocate only this idle bot to the nearest clear tile.
+        safeSimulatedPlayerTile(bot.tile, seed + failures * 31, 6, skipPreferred = true)?.let { escape ->
+            bot.move(escape)
+            failedMovementAttempts.remove(key)
+            activeTaskDescriptions.remove(key)
+            return true
+        }
+        return false
     }
 
     private fun loadProgress() {

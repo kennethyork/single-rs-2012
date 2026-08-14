@@ -27,11 +27,28 @@ import kotlin.math.abs
 /** Social packet encoders require every sender to have a crown/rights value. */
 internal fun simulatedPlayerAccount(name: String) = Account(name).also { it.rights = Rights.PLAYER }
 
+/** Finds a collision-free bot tile without introducing nondeterministic spawn positions. */
+internal fun safeSimulatedPlayerTile(preferred: Tile, seed: Int, maxRadius: Int = 8, skipPreferred: Boolean = false): Tile? {
+    if (!skipPreferred && World.floorAndWallsFree(preferred, 1)) return preferred
+    for (radius in 1..maxRadius) {
+        val ring = mutableListOf<Tile>()
+        for (dx in -radius..radius) for (dy in -radius..radius) {
+            if (abs(dx) == radius || abs(dy) == radius) ring += preferred.transform(dx, dy, 0)
+        }
+        val start = Math.floorMod(seed + radius * 17, ring.size)
+        for (offset in ring.indices) {
+            val candidate = ring[(start + offset) % ring.size]
+            if (World.floorAndWallsFree(candidate, 1)) return candidate
+        }
+    }
+    return null
+}
+
 /** A real, server-controlled Player entity with no attached game client. */
 class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(simulatedPlayerAccount(definition.name)) {
     val personality = personalityFor(definition)
-    private val home = Tile.of(definition.x, definition.y, definition.plane)
     private val seed = definition.name.hashCode().let { if (it == Int.MIN_VALUE) 0 else abs(it) }
+    private var home = Tile.of(definition.x, definition.y, definition.plane)
     private var nextChatTick = 12L + seed % 25
 
     init {
@@ -41,6 +58,13 @@ class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(sim
         })
         botSession.setEncoder(WorldEncoder(this, botSession))
         init(botSession, account, ScreenMode.FIXED.ordinal, 765, 503, null)
+        safeSimulatedPlayerTile(home, seed)?.let { safeHome ->
+            if (safeHome.x != home.x || safeHome.y != home.y || safeHome.plane != home.plane) {
+                home = safeHome
+                move(safeHome)
+                processMovement()
+            }
+        }
         configureSkills()
         SimulatedPlayerActivityManager.restoreProgress(this)
         configureAppearance()

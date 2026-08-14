@@ -1712,6 +1712,10 @@ public abstract class Entity {
 		this.routeEvent = routeEvent;
 	}
 
+	public boolean hasRouteEvent() {
+		return routeEvent != null;
+	}
+
 	public long getTickCounter() {
 		return tickCounter;
 	}
