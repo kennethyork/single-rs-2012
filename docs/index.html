@@ -20,9 +20,9 @@
       <div class="container">
         <p>No hosted server. No MongoDB. No lobby service. No internet connection. The Darkan client and the local world engine start together and the client talks only to <code>127.0.0.1</code>.</p>
         <div class="download-buttons">
-          <a href="https://github.com/kennethyork/single-rs-2012/releases/tag/v0.9.0" class="cta">Linux Download (v0.9.0)</a>
-          <a href="https://github.com/kennethyork/single-rs-2012/releases/tag/v0.9.0" class="cta">Windows Download (v0.9.0)</a>
-          <a href="https://github.com/kennethyork/single-rs-2012/releases/tag/v0.9.0" class="cta">macOS Download (v0.9.0)</a>
+          <a href="https://github.com/kennethyork/single-rs-2012/releases/tag/v0.10.0" class="cta">Linux Download (v0.10.0)</a>
+          <a href="https://github.com/kennethyork/single-rs-2012/releases/tag/v0.10.0" class="cta">Windows Download (v0.10.0)</a>
+          <a href="https://github.com/kennethyork/single-rs-2012/releases/tag/v0.10.0" class="cta">macOS Download (v0.10.0)</a>
           <a href="https://github.com/kennethyork/single-rs-2012/releases" class="cta cta-alt">View all releases</a>
         </div>
         <div class="release-badges" aria-label="GitHub release information">
@@ -76,7 +76,7 @@
           <li><strong>Living regional groups</strong> &mdash; bots gather in teams of up to four, visibly train and bank together, gain skill XP over time, celebrate levels, and keep their progress after a restart</li>
           <li><strong>Nearby group status</strong> &mdash; use <code>::botgroups</code> to find local teams and see whether they are meeting, training, or resting</li>
           <li><strong>Join or lead a group</strong> &mdash; choose <em>Group options</em> on a bot to join and earn normal XP beside its team, or use <code>::botgroup create My Team</code> and invite up to seven bots into a persistent group that follows you</li>
-          <li><strong>Optional local AI</strong> &mdash; connect Ollama for open-ended conversations remembered between restarts; requests stay ordered and scripted replies remain an automatic fallback</li>
+          <li><strong>Ollama-only conversations</strong> &mdash; every spontaneous line, bot-to-bot follow-up, and public, private, or clan reply comes from Ollama with persistent per-player memory; there are no shared scripted fallback replies</li>
           <li><strong>Visible and private</strong> &mdash; <code>::ollamastatus</code> reports the active chat mode, <code>::ollamamodel</code> changes the model in game, and <code>::ollamaforget</code> erases locally saved conversation memory</li>
           <li><strong>Bot clans</strong> &mdash; create your own clan from the Clan Chat tab, then use a player's <em>Clan options</em> to join their clan or recruit a clanless player into yours</li>
           <li><strong>Clan combat parties</strong> &mdash; use <code>::clanparty</code> to summon up to four recruited members for bossing and Wilderness multi-combat PKing; use <code>::clanparty dismiss</code> to send them home</li>
@@ -84,8 +84,8 @@
           <li><strong>Activity helpers</strong> for bosses, Dungeoneering, and Pest Control stay activity-specific: no XP, no drops, no saved accounts</li>
         </ul>
 
-        <h3>Optional Ollama conversations</h3>
-        <p>Scripted bot conversations work without extra software. For open-ended local AI replies, install Ollama, then download the default model once:</p>
+        <h3>Ollama-only conversations</h3>
+        <p>Bot conversations require Ollama so every reply can follow the speaker's individual identity. Install Ollama, then download the default model once:</p>
         <p><code>ollama pull qwen3.5:4b</code> <button class="copy" type="button" data-copy="ollama pull qwen3.5:4b">Copy</button></p>
         <ul>
           <li><code>::ollamastatus</code> checks whether Ollama and the selected model are available</li>
@@ -93,6 +93,7 @@
           <li><code>::ollamamodel qwen3.5:4b</code> switches models while playing; the next bot reply uses it without a restart</li>
           <li><code>::ollamamodel reset</code> restores the configured default</li>
           <li>The selected model and conversation memory are saved locally between sessions</li>
+          <li>If Ollama or the selected model is unavailable, bots stay silent instead of using shared scripted replies</li>
         </ul>
       </div>
     </section>

@@ -177,16 +177,32 @@ private object SimulatedPlayerChat {
             .minByOrNull { Utils.getDistance(bot.tile, it.tile) }
             ?: return false
 
-        val lines = linesFor(bot, listener)
-        val line = lines[Math.floorMod(seed + (bot.tickCounter / 50L).toInt(), lines.size)]
-        bot.faceEntityTile(listener)
-        bot.sendPublicChatMessage(PublicChatMessage(line, 0))
-        nearbyPartner(bot, listener)?.let { partner ->
-            WorldTasks.delay(4) {
-                if (!bot.hasFinished() && !partner.hasFinished() && !listener.hasFinished() &&
-                    partner.withinDistance(bot, VIEW_DISTANCE) && partner.withinDistance(listener, VIEW_DISTANCE)) {
-                    partner.faceEntityTile(bot)
-                    partner.sendPublicChatMessage(PublicChatMessage(partnerReply(partner, bot, line), 0))
+        val activity = SimulatedPlayerActivityManager.status(bot)
+        SimulatedPlayerOllama.reply(
+            bot,
+            listener,
+            "ambient",
+            "Start a spontaneous conversation while $activity. Say something natural based on your identity, surroundings, or goals."
+        ) { line ->
+            if (bot.hasFinished() || listener.hasFinished() || !bot.withinDistance(listener, VIEW_DISTANCE)) return@reply
+            bot.faceEntityTile(listener)
+            bot.sendPublicChatMessage(PublicChatMessage(line, 0))
+            nearbyPartner(bot, listener)?.let { partner ->
+                WorldTasks.delay(4) {
+                    if (!bot.hasFinished() && !partner.hasFinished() && !listener.hasFinished() &&
+                        partner.withinDistance(bot, VIEW_DISTANCE) && partner.withinDistance(listener, VIEW_DISTANCE)) {
+                        SimulatedPlayerOllama.reply(
+                            partner,
+                            listener,
+                            "ambient",
+                            "${bot.displayName} just said: $line Reply naturally to them in your own voice."
+                        ) { response ->
+                            if (!partner.hasFinished() && !listener.hasFinished() && partner.withinDistance(listener, VIEW_DISTANCE)) {
+                                partner.faceEntityTile(bot)
+                                partner.sendPublicChatMessage(PublicChatMessage(response, 0))
+                            }
+                        }
+                    }
                 }
             }
         }

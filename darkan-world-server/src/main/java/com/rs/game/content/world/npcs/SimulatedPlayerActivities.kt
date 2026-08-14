@@ -6,7 +6,6 @@ import com.rs.game.World
 import com.rs.game.model.entity.player.Player
 import com.rs.game.model.entity.player.Skills
 import com.rs.lib.Constants
-import com.rs.lib.game.PublicChatMessage
 import com.rs.lib.game.Tile
 import com.rs.lib.util.Logger
 import com.rs.lib.util.Utils
@@ -51,7 +50,6 @@ object SimulatedPlayerActivityManager {
     private var loaded = false
     private var dirty = false
     private var lastSaveTick = 0L
-    private var nextObservedChatAt = 0L
 
     private val activities = mapOf(
         "Attack" to BotActivity(Skills.ATTACK, "combat training", 422, "practises attack combinations"),
@@ -138,9 +136,6 @@ object SimulatedPlayerActivityManager {
         when (cycle) {
             0 -> if (bot.tickCounter % 24L == (seed % 24).toLong()) {
                 effectiveMembers(group).firstOrNull()?.let(bot::faceEntityTile)
-                speakIfObserved(bot, listOf(
-                    "Banked and ready, team.", "What level are we aiming for?", "Let's get another trip done."
-                )[Math.floorMod(seed, 3)])
             }
             1 -> performActivity(bot, group, group.activity, settings, seed)
             else -> if (bot.tickCounter % 20L == (seed % 20).toLong()) {
@@ -317,9 +312,6 @@ object SimulatedPlayerActivityManager {
         dirty = true
         if (newLevel > oldLevel) {
             bot.spotAnim(2456)
-            speakIfObserved(bot, "Level $newLevel ${Constants.SKILL_NAME[activity.skill]}!")
-        } else if (state.actions % 30L == 0L) {
-            speakIfObserved(bot, "${activity.verb.replaceFirstChar(Char::uppercase)}; level $newLevel now.")
         }
         if (bot === effectiveMembers(group).firstOrNull()) trainParticipatingPlayers(group, activity, settings)
     }
@@ -411,17 +403,6 @@ object SimulatedPlayerActivityManager {
     private fun phase(group: ActivityGroup, tick: Long): Int {
         val offset = Math.floorMod(group.name.hashCode(), 360)
         return Math.floorMod(((tick + offset) / 120L).toInt(), 3)
-    }
-
-    private fun speakIfObserved(bot: SimulatedPlayerBot, message: String) {
-        val now = System.currentTimeMillis()
-        if (now < nextObservedChatAt) return
-        val observed = World.players.any {
-            it !== bot && !it.isHeadless && !it.isDead && !it.hasFinished() && bot.withinDistance(it, 14)
-        }
-        if (!observed) return
-        bot.sendPublicChatMessage(PublicChatMessage(message, 0))
-        nextObservedChatAt = now + 8_000L
     }
 
     private fun formationTile(anchor: Tile, index: Int, bankOffset: Int): Tile {

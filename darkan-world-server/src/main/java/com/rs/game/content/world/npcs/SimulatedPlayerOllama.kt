@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicLong
 
-/** Optional, non-blocking Ollama conversation engine with scripted fallback. */
+/** Non-blocking Ollama-only conversation engine. Bots stay silent when it is unavailable. */
 object SimulatedPlayerOllama {
     private const val HISTORY_FILE = "ollama-conversations.json"
     private const val MODEL_FILE = "ollama-model.json"
@@ -34,7 +34,6 @@ object SimulatedPlayerOllama {
         val player: Player,
         val channel: String,
         val input: String,
-        val fallback: () -> String,
         val deliver: (String) -> Unit
     )
 
@@ -46,6 +45,7 @@ object SimulatedPlayerOllama {
     private val unavailableUntil = AtomicLong(0L)
     private val lastFailureLog = AtomicLong(0L)
     private val lastSuccessfulResponse = AtomicLong(0L)
+    private val lastUnavailableNotice = ConcurrentHashMap<String, Long>()
     @Volatile private var modelOverride: String? = null
     @Volatile private var configured = false
 
@@ -79,21 +79,20 @@ object SimulatedPlayerOllama {
         player: Player,
         channel: String,
         message: String,
-        fallback: () -> String,
         deliver: (String) -> Unit
     ) {
         val settings = SimulatedPlayerPopulationManager.ollamaSettings
         if (!settings.enabled || System.currentTimeMillis() < unavailableUntil.get()) {
-            deliver(fallback())
+            notifyUnavailable(player)
             return
         }
         val key = conversationKey(channel, player, bot)
         val queue = queues.computeIfAbsent(key) { ConcurrentLinkedQueue() }
         if (queue.size >= 10) {
-            deliver(fallback())
+            player.sendMessage("That bot already has too many messages queued. Try again shortly.")
             return
         }
-        queue.add(PendingReply(bot, player, channel, message, fallback, deliver))
+        queue.add(PendingReply(bot, player, channel, message, deliver))
         startNext(key)
     }
 
@@ -145,8 +144,8 @@ object SimulatedPlayerOllama {
         val settings = SimulatedPlayerPopulationManager.ollamaSettings
         val now = System.currentTimeMillis()
         val state = when {
-            !settings.enabled -> "disabled (scripted replies only)"
-            now < unavailableUntil.get() -> "temporarily unavailable; retrying automatically"
+            !settings.enabled -> "disabled; bots are silent"
+            now < unavailableUntil.get() -> "temporarily unavailable; bots are silent and retrying automatically"
             lastSuccessfulResponse.get() > 0L -> "connected; last response ${((now - lastSuccessfulResponse.get()) / 1_000L).coerceAtLeast(0)}s ago"
             else -> "enabled; waiting for the first response"
         }
@@ -167,10 +166,10 @@ object SimulatedPlayerOllama {
     fun sendStartupStatus(player: Player) {
         val settings = SimulatedPlayerPopulationManager.ollamaSettings
         if (!settings.enabled) {
-            player.sendMessage("Bot conversations are using scripted replies. Use ::ollamastatus for details.")
+            player.sendMessage("Bot conversations require Ollama and are currently disabled. Use ::ollamastatus for details.")
             return
         }
-        player.sendMessage("Bot AI is enabled with ${activeModel()}; scripted replies take over if Ollama is unavailable.")
+        player.sendMessage("Bot conversations use only Ollama with ${activeModel()}. Bots stay silent if Ollama is unavailable.")
         if (isLocalEndpoint(settings.baseUrl))
             player.sendMessage("<col=80ff80>Privacy:</col> Ollama conversations and memory stay on this computer. Use ::ollamaforget to erase saved chat memory.")
         else
@@ -238,7 +237,9 @@ object SimulatedPlayerOllama {
             if (history.peekLast()?.role == "user") history.removeLast()
         } }
         if (generated != null) persistHistories()
-        WorldTasks.delay(0) { pending.deliver(generated ?: pending.fallback()) }
+        WorldTasks.delay(0) {
+            if (generated != null) pending.deliver(generated) else notifyUnavailable(pending.player)
+        }
         activeConversations.remove(key)
         startNext(key)
     }
@@ -290,7 +291,7 @@ object SimulatedPlayerOllama {
             HttpRequest.newBuilder(URI.create(settings.baseUrl.trimEnd('/') + "/api/tags"))
                 .timeout(Duration.ofSeconds(3)).GET().build()
         } catch (_: Throwable) {
-            deliver("Ollama connection check: invalid endpoint; scripted fallback is active.")
+            deliver("Ollama connection check: invalid endpoint; bots will remain silent.")
             return
         }
         client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).whenComplete { response, error ->
@@ -301,7 +302,7 @@ object SimulatedPlayerOllama {
                 } catch (_: Throwable) { false }
                 if (installed) "<col=80ff80>Ollama connection check: online; $model is installed.</col>"
                 else "<col=ffcc00>Ollama is online, but $model is not installed. Run: ollama pull $model</col>"
-            } else "<col=ffcc00>Ollama connection check: offline; scripted fallback is active.</col>"
+            } else "<col=ffcc00>Ollama connection check: offline; bots will remain silent.</col>"
             WorldTasks.delay(0) { deliver(result) }
         }
     }
@@ -331,7 +332,17 @@ object SimulatedPlayerOllama {
         val now = System.currentTimeMillis()
         unavailableUntil.set(now + 30_000L)
         if (now - lastFailureLog.get() > 60_000L && lastFailureLog.getAndSet(now) < now - 60_000L) {
-            Logger.info(javaClass, "reply", "Ollama unavailable (${error?.javaClass?.simpleName ?: "HTTP $status"}); using scripted bot replies")
+            Logger.info(javaClass, "reply", "Ollama unavailable (${error?.javaClass?.simpleName ?: "HTTP $status"}); bots will remain silent")
+        }
+    }
+
+    private fun notifyUnavailable(player: Player) {
+        val now = System.currentTimeMillis()
+        val previous = lastUnavailableNotice.put(player.username.lowercase(), now)
+        if (previous != null && now - previous < 30_000L) return
+        WorldTasks.delay(0) {
+            if (!player.hasFinished())
+                player.sendMessage("<col=ffcc00>Ollama did not reply. Bots stay silent until it and ${activeModel()} are available. Use ::ollamastatus.</col>")
         }
     }
 }

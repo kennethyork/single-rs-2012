@@ -15,7 +15,6 @@ import com.rs.lib.net.packets.encoders.social.ClanChannelFull
 import com.rs.lib.net.packets.encoders.social.ClanSettingsFull
 import com.rs.lib.net.packets.encoders.social.FriendStatus
 import com.rs.lib.util.Utils
-import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
 /** Local social routing used when Single RS 2012 runs without a lobby server. */
@@ -86,18 +85,10 @@ object SimulatedPlayerSocial {
 
         WorldTasks.delay(responseDelay(message)) {
             if (player.hasFinished() || bot.hasFinished() || !bot.withinDistance(player, RESPONSE_DISTANCE)) return@delay
-            SimulatedPlayerOllama.reply(bot, player, "public", message, { reply(bot, player, message, false) }) { answer ->
+            SimulatedPlayerOllama.reply(bot, player, "public", message) { answer ->
                 if (!player.hasFinished() && !bot.hasFinished() && bot.withinDistance(player, RESPONSE_DISTANCE)) {
                     bot.faceEntityTile(player)
                     bot.sendPublicChatMessage(PublicChatMessage(answer, 0))
-                    nearbyConversationPartner(bot)?.let { second ->
-                        WorldTasks.delay(4) {
-                            if (!second.hasFinished() && second.withinDistance(player, RESPONSE_DISTANCE)) {
-                                second.faceEntityTile(bot)
-                                second.sendPublicChatMessage(PublicChatMessage(followUp(second, bot, answer), 0))
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -111,7 +102,7 @@ object SimulatedPlayerSocial {
         WorldTasks.delay(responseDelay(message)) {
             if (!player.hasFinished() && !bot.hasFinished()) {
                 if (wantsClanInvite(message)) joinClan(player, bot)
-                SimulatedPlayerOllama.reply(bot, player, "private", message, { reply(bot, player, message, true) }) { answer ->
+                SimulatedPlayerOllama.reply(bot, player, "private", message) { answer ->
                     if (!player.hasFinished() && !bot.hasFinished())
                         player.packets.receivePrivateMessage(bot.account, answer)
                 }
@@ -126,11 +117,14 @@ object SimulatedPlayerSocial {
         val name = if (guest) player.social.guestedClanChat else player.social.clanName
         val clan = ClansManager.getCachedClan(name) ?: return false
         clanViewers(clan, guest).forEach { it.packets.receiveClanChatMessage(player.account, message, guest) }
-        val bot = SimulatedPlayerPopulationManager.activeBots().firstOrNull { clanName(it) == clan.name }
+        val clanBots = SimulatedPlayerPopulationManager.activeBots().filter { clanName(it) == clan.name }
+        val bot = clanBots.takeIf { it.isNotEmpty() }?.let {
+            it[Math.floorMod(message.hashCode() + (System.currentTimeMillis() / 30_000L).toInt(), it.size)]
+        }
         val cooldown = SimulatedPlayerPopulationManager.ollamaSettings.clanCooldownSeconds.coerceIn(1, 120) * 1_000L
         if (bot != null && acquireLock("clan:${clan.name}", cooldown)) {
             WorldTasks.delay(3) {
-                SimulatedPlayerOllama.reply(bot, player, "clan", message, { reply(bot, player, message, false) }) { answer ->
+                SimulatedPlayerOllama.reply(bot, player, "clan", message) { answer ->
                     clanViewers(clan, guest).forEach {
                         it.packets.receiveClanChatMessage(bot.account, answer, guest)
                     }
@@ -230,42 +224,6 @@ object SimulatedPlayerSocial {
         }
     }
 
-    private fun nearbyConversationPartner(speaker: SimulatedPlayerBot): SimulatedPlayerBot? =
-        SimulatedPlayerPopulationManager.activeBots().firstOrNull {
-            it !== speaker && !it.isDead && it.withinDistance(speaker, RESPONSE_DISTANCE)
-        }
-
-    private fun reply(bot: SimulatedPlayerBot, player: Player, rawMessage: String, privateMessage: Boolean): String {
-        val message = rawMessage.lowercase(Locale.ROOT)
-        val personality = bot.personality
-        fun pick(lines: List<String>) = lines[choice(message + bot.username, lines.size)]
-        return when {
-            wantsClanInvite(message) -> clanName(bot)?.let {
-                if (privateMessage) "Welcome to $it! Check your Clan Chat tab." else "PM me 'join clan' and I'll invite you, ${player.displayName}."
-            } ?: "I'm not in a clan right now."
-            any(message, "hello", "hi", "hey", "yo") -> pick(personality.greetings)
-            any(message, "how are you", "how r u", "you good") -> pick(personality.moods)
-            any(message, "what are you doing", "what you doing", "wyd") -> "I'm trying to ${personality.currentGoal}."
-            any(message, "where", "location") -> "I'm around ${bot.definition.location.ifBlank { "Gielinor" }} right now."
-            any(message, "level", "stats", "combat") -> "I'm combat level ${bot.skills.combatLevelWithSummoning}."
-            any(message, "clan") -> clanName(bot)?.let { "I'm in $it. PM me 'join clan' if you want in." }
-                ?: "I'm not in a clan right now."
-            any(message, "trade", "buy", "sell") -> "Send me a trade request and I'll show you what I've got."
-            any(message, "help", "what should i do") -> pick(personality.suggestions + "You could try ${personality.favoriteActivity} or train ${personality.favoriteSkill}.")
-            any(message, "thanks", "thank you", "ty") -> pick(listOf("No problem!", "Any time.", "Glad to help."))
-            any(message, "bye", "cya", "later") -> pick(listOf("See you around!", "Take care.", "Good luck out there."))
-            message.endsWith("?") -> pick(personality.reactions + listOf("What do you think?", "It's worth a try."))
-            else -> pick(personality.reactions + listOf("Tell me more.", "Fair enough, ${player.displayName}."))
-        }
-    }
-
-    private fun followUp(bot: SimulatedPlayerBot, first: SimulatedPlayerBot, message: String): String = when (choice(message + bot.username, 4)) {
-        0 -> "Yeah, ${first.displayName} has a point."
-        1 -> "I was thinking the same thing."
-        2 -> "What are you training, anyway?"
-        else -> "Anyone want to team up after this?"
-    }
-
     fun recruitedBotNames(player: Player): List<String> {
         val saved = player.getO<Any>(RECRUITED_BOTS_KEY) as? Collection<*> ?: return emptyList()
         return saved.mapNotNull { it as? String }
@@ -274,9 +232,10 @@ object SimulatedPlayerSocial {
     private fun clanName(bot: SimulatedPlayerBot): String? =
         bot.social.clanName?.trim()?.ifBlank { null } ?: bot.definition.clan.trim().ifBlank { null }
 
-    private fun wantsClanInvite(message: String) = any(message.lowercase(Locale.ROOT), "join clan", "clan invite", "invite me", "can i join")
-    private fun any(message: String, vararg terms: String) = terms.any(message::contains)
-    private fun choice(value: String, size: Int) = Math.floorMod(value.hashCode(), size)
+    private fun wantsClanInvite(message: String): Boolean {
+        val normalized = message.lowercase()
+        return listOf("join clan", "clan invite", "invite me", "can i join").any(normalized::contains)
+    }
     private fun responseDelay(message: String): Int {
         val settings = SimulatedPlayerPopulationManager.ollamaSettings
         val minimum = settings.minimumResponseDelayTicks.coerceIn(0, 50)
