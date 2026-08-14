@@ -136,6 +136,9 @@ You can rank the live export overall or by any of the 25 skills. Browsers withou
 the persistent file-access feature retain a manual **Choose highscore export**
 fallback. Search by display name or username, then click any character or bot to
 open its complete combat, total-level, total-XP, and 25-skill profile.
+The last valid rankings, active search, selected ranking, and open player profile
+remain visible after a page refresh. If the browser does not retain permission to
+the local file, click **Connect live highscores** again to resume live updates.
 
 Right-click a simulated player for its social options:
 

@@ -49,6 +49,71 @@ let highscoreRefreshTimer = null;
 
 const numberFormat = new Intl.NumberFormat();
 const supportsLiveHighscores = 'showOpenFilePicker' in window && 'indexedDB' in window;
+const highscoreCacheKey = 'single-rs-2012-highscores-cache-v1';
+const highscoreViewKey = 'single-rs-2012-highscores-view-v1';
+
+function readHighscoreView() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(highscoreViewKey));
+    return saved && typeof saved === 'object' ? saved : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveHighscoreView() {
+  try {
+    localStorage.setItem(highscoreViewKey, JSON.stringify({
+      search: highscoreSearch.value,
+      skill: highscoreSkill.value,
+      selectedUsername: selectedHighscoreUsername
+    }));
+  } catch {
+    // The rankings still work when private browsing disables local storage.
+  }
+}
+
+function validateHighscoreData(parsed) {
+  if (!parsed || parsed.formatVersion !== 1 || !Array.isArray(parsed.skills) || !Array.isArray(parsed.entries)) {
+    throw new Error('Unsupported highscore export format');
+  }
+  parsed.entries.forEach(entry => {
+    if (!entry || typeof entry.displayName !== 'string' || typeof entry.username !== 'string' ||
+        !Array.isArray(entry.levels) || !Array.isArray(entry.xp) ||
+        entry.levels.length < parsed.skills.length || entry.xp.length < parsed.skills.length) {
+      throw new Error('Invalid highscore entry');
+    }
+  });
+  return parsed;
+}
+
+function applyHighscoreData(parsed, summary) {
+  const savedView = highscoreData ? {
+    search: highscoreSearch.value,
+    skill: highscoreSkill.value,
+    selectedUsername: selectedHighscoreUsername
+  } : readHighscoreView();
+  highscoreData = parsed;
+  highscoreSkill.replaceChildren(new Option('Overall', 'overall'), ...parsed.skills.map((name, index) => new Option(name, String(index))));
+  if ([...highscoreSkill.options].some(option => option.value === savedView.skill)) {
+    highscoreSkill.value = savedView.skill;
+  }
+  highscoreSearch.value = typeof savedView.search === 'string' ? savedView.search : '';
+  selectedHighscoreUsername = typeof savedView.selectedUsername === 'string' ? savedView.selectedUsername : null;
+  highscoreSkill.disabled = false;
+  highscoreSearch.disabled = false;
+  highscoreSummary.textContent = summary;
+  renderHighscores();
+  if (selectedHighscoreUsername) {
+    const selected = parsed.entries.find(entry => entry.username === selectedHighscoreUsername);
+    if (selected) renderHighscoreProfile(selected, false);
+    else {
+      selectedHighscoreUsername = null;
+      highscoreProfile.hidden = true;
+      saveHighscoreView();
+    }
+  }
+}
 
 function renderHighscores() {
   if (!highscoreData) return;
@@ -106,6 +171,7 @@ function renderHighscores() {
 
 function renderHighscoreProfile(entry, scroll = true) {
   selectedHighscoreUsername = entry.username;
+  saveHighscoreView();
   highscoreProfileName.textContent = entry.displayName;
   highscoreProfileSummary.textContent = `${entry.bot ? 'Bot' : 'Character'} · Combat ${entry.combatLevel} · Total level ${numberFormat.format(entry.totalLevel)} · Total XP ${numberFormat.format(entry.totalXp)}`;
   highscoreProfileSkills.replaceChildren(...highscoreData.skills.map((skill, index) => {
@@ -123,41 +189,47 @@ function renderHighscoreProfile(entry, scroll = true) {
 
 async function loadHighscoreFile(file, live = false) {
   try {
-    const parsed = JSON.parse(await file.text());
-    if (parsed.formatVersion !== 1 || !Array.isArray(parsed.skills) || !Array.isArray(parsed.entries)) {
-      throw new Error('Unsupported highscore export format');
+    const parsed = validateHighscoreData(JSON.parse(await file.text()));
+    try {
+      localStorage.setItem(highscoreCacheKey, JSON.stringify(parsed));
+    } catch {
+      // A denied cache must not stop the selected file from loading.
     }
-    parsed.entries.forEach(entry => {
-      if (!entry || typeof entry.displayName !== 'string' || typeof entry.username !== 'string' ||
-          !Array.isArray(entry.levels) || !Array.isArray(entry.xp) ||
-          entry.levels.length < parsed.skills.length || entry.xp.length < parsed.skills.length) {
-        throw new Error('Invalid highscore entry');
-      }
-    });
-    highscoreData = parsed;
-    highscoreSkill.replaceChildren(new Option('Overall', 'overall'), ...parsed.skills.map((name, index) => new Option(name, String(index))));
-    highscoreSkill.disabled = false;
-    highscoreSearch.disabled = false;
     const generated = new Date(parsed.generatedAt);
     const generatedLabel = Number.isNaN(generated.valueOf()) ? 'unknown time' : generated.toLocaleString();
-    highscoreSummary.textContent = live
+    const summary = live
       ? `Live: ${parsed.entries.length} local entries, last game update ${generatedLabel}. Refreshing automatically; nothing is uploaded.`
       : `Loaded ${parsed.entries.length} local entries generated ${generatedLabel}. Nothing was uploaded.`;
     highscoreModifiedAt = file.lastModified;
-    renderHighscores();
-    if (selectedHighscoreUsername) {
-      const selected = parsed.entries.find(entry => entry.username === selectedHighscoreUsername);
-      if (selected) renderHighscoreProfile(selected, false);
-      else highscoreProfile.hidden = true;
-    }
+    applyHighscoreData(parsed, summary);
   } catch (error) {
-    highscoreData = null;
-    highscoreSkill.disabled = true;
-    highscoreSearch.disabled = true;
-    highscoreResults.textContent = '';
-    highscoreProfile.hidden = true;
     highscoreSummary.textContent = `Could not load ${file.name}: ${error.message}`;
-    highscoreBody.innerHTML = '<tr><td colspan="5" class="highscore-empty">Choose a valid Single RS 2012 highscore export.</td></tr>';
+    if (!highscoreData) {
+      highscoreSkill.disabled = true;
+      highscoreSearch.disabled = true;
+      highscoreResults.textContent = '';
+      highscoreProfile.hidden = true;
+      highscoreBody.innerHTML = '<tr><td colspan="5" class="highscore-empty">Choose a valid Single RS 2012 highscore export.</td></tr>';
+    }
+  }
+}
+
+function restoreCachedHighscores() {
+  try {
+    const cached = localStorage.getItem(highscoreCacheKey);
+    if (!cached) return false;
+    const parsed = validateHighscoreData(JSON.parse(cached));
+    const generated = new Date(parsed.generatedAt);
+    const generatedLabel = Number.isNaN(generated.valueOf()) ? 'unknown time' : generated.toLocaleString();
+    applyHighscoreData(parsed, `Showing ${parsed.entries.length} saved local entries from ${generatedLabel}. Reconnecting live updates in the background.`);
+    return true;
+  } catch {
+    try {
+      localStorage.removeItem(highscoreCacheKey);
+    } catch {
+      // Ignore browsers that deny local storage entirely.
+    }
+    return false;
   }
 }
 
@@ -198,7 +270,9 @@ async function refreshLiveHighscores(requestAccess = false) {
     permission = await liveHighscoreHandle.requestPermission({ mode: 'read' });
   }
   if (permission !== 'granted') {
-    highscoreSummary.textContent = 'Click Connect live highscores to restore access to the remembered file.';
+    highscoreSummary.textContent = highscoreData
+      ? 'Showing saved stats. Click Connect live highscores to resume automatic updates.'
+      : 'Click Connect live highscores to restore access to the remembered file.';
     return;
   }
   const file = await liveHighscoreHandle.getFile();
@@ -239,12 +313,21 @@ highscoreFile.addEventListener('change', async () => {
   if (file) await loadHighscoreFile(file);
 });
 
-highscoreSkill.addEventListener('change', renderHighscores);
-highscoreSearch.addEventListener('input', renderHighscores);
+highscoreSkill.addEventListener('change', () => {
+  saveHighscoreView();
+  renderHighscores();
+});
+highscoreSearch.addEventListener('input', () => {
+  saveHighscoreView();
+  renderHighscores();
+});
 highscoreProfileClose.addEventListener('click', () => {
   selectedHighscoreUsername = null;
   highscoreProfile.hidden = true;
+  saveHighscoreView();
 });
+
+restoreCachedHighscores();
 
 if (supportsLiveHighscores) {
   highscoreFallback.hidden = true;
@@ -254,7 +337,7 @@ if (supportsLiveHighscores) {
     await refreshLiveHighscores();
     startLiveHighscoreRefresh();
   }).catch(() => {
-    highscoreSummary.textContent = 'Connect the local highscore file to enable automatic updates.';
+    if (!highscoreData) highscoreSummary.textContent = 'Connect the local highscore file to enable automatic updates.';
   });
 } else {
   highscoreConnect.textContent = 'Choose highscore export';
