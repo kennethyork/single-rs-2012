@@ -41,6 +41,11 @@ object SimulatedPlayerSocialCommands {
         Commands.add(Rights.PLAYER, "botgroups", "Lists nearby simulated-player activity groups.") { player, _ ->
             SimulatedPlayerActivityManager.sendNearbyGroups(player)
         }
+        Commands.add(Rights.PLAYER, "exporthighscores,websitehighscores", "Exports local player and bot highscores for the website.") { player, _ ->
+            val file = SimulatedPlayerHighscores.export(player)
+            player.sendMessage("Exported ${SimulatedPlayerPopulationManager.activeCount() + 1} highscore entries to <col=00ffff>${file.absolutePath}</col>.")
+            player.sendMessage("Open the Single RS 2012 website and choose this file in its Local Highscores section. The file stays on your computer.")
+        }
         Commands.add(Rights.PLAYER, "botgroup,activitygroup [create/skill/status/leave/disband]", "Manages your simulated-player activity group.") { player, args ->
             when (args.firstOrNull()?.lowercase()) {
                 "create", "form" -> SimulatedPlayerActivityManager.createPlayerGroup(player, args.drop(1).joinToString(" "))

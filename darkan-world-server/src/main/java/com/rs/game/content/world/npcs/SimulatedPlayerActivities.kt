@@ -3,12 +3,18 @@ package com.rs.game.content.world.npcs
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.rs.game.World
+import com.rs.game.content.skills.fishing.FishingSpot
+import com.rs.game.content.skills.mining.RockType
+import com.rs.game.content.skills.woodcutting.TreeType
 import com.rs.game.model.entity.player.Player
 import com.rs.game.model.entity.player.Skills
+import com.rs.game.model.gameobject.GameObject
 import com.rs.lib.Constants
 import com.rs.lib.game.Tile
 import com.rs.lib.util.Logger
 import com.rs.lib.util.Utils
+import com.rs.net.decoders.handlers.NPCHandler
+import com.rs.net.decoders.handlers.ObjectHandler
 
 data class SimulatedPlayerActivitySettings(
     val enabled: Boolean = true,
@@ -48,6 +54,8 @@ object SimulatedPlayerActivityManager {
     private val playerGroups = mutableMapOf<String, ActivityGroup>()
     private val memberIndex = mutableMapOf<String, Int>()
     private val soloActivities = mutableMapOf<String, BotActivity>()
+    private val soloAnchors = mutableMapOf<String, Tile>()
+    private val activeTaskDescriptions = mutableMapOf<String, String>()
     private var loaded = false
     private var dirty = false
     private var lastSaveTick = 0L
@@ -80,6 +88,32 @@ object SimulatedPlayerActivityManager {
         "Dungeoneering" to BotActivity(Skills.DUNGEONEERING, "Dungeoneering", 13624, "prepares for a floor")
     )
 
+    private val fishingSpots = mapOf(
+        1174 to FishingSpot.KARAMBWANJI,
+        1176 to FishingSpot.KARAMBWAN,
+        1177 to FishingSpot.KARAMBWAN,
+        1178 to FishingSpot.KARAMBWAN,
+        312 to FishingSpot.LOBSTER,
+        1332 to FishingSpot.LOBSTER,
+        5470 to FishingSpot.LOBSTER,
+        7046 to FishingSpot.LOBSTER,
+        313 to FishingSpot.BIG_NET,
+        1333 to FishingSpot.BIG_NET,
+        5471 to FishingSpot.BIG_NET,
+        317 to FishingSpot.FLY_FISHING,
+        315 to FishingSpot.FLY_FISHING,
+        309 to FishingSpot.FLY_FISHING,
+        326 to FishingSpot.SHRIMP,
+        323 to FishingSpot.SHRIMP,
+        7045 to FishingSpot.SHRIMP,
+        324 to FishingSpot.LOBSTER,
+        325 to FishingSpot.SHRIMP,
+        327 to FishingSpot.SHRIMP,
+        328 to FishingSpot.FLY_FISHING,
+        329 to FishingSpot.FLY_FISHING,
+        330 to FishingSpot.SHRIMP
+    )
+
     fun restoreProgress(bot: SimulatedPlayerBot) {
         loadProgress()
         progress[bot.username.lowercase()]?.xp?.forEach { (skill, xp) ->
@@ -96,6 +130,8 @@ object SimulatedPlayerActivityManager {
         playerGroups.clear()
         memberIndex.clear()
         soloActivities.clear()
+        soloAnchors.clear()
+        activeTaskDescriptions.clear()
         val size = SimulatedPlayerPopulationManager.activitySettings.groupSize.coerceIn(2, 8)
         val labels = listOf("Adventurers", "Training Crew", "Regulars", "Wayfarers", "Skill Team", "Raid Friends")
         bots.groupBy { it.definition.location.ifBlank { "Gielinor" } }.forEach { (region, regionalBots) ->
@@ -117,24 +153,38 @@ object SimulatedPlayerActivityManager {
                 }
             }
             soloBots.forEach { bot ->
-                soloActivities[bot.username.lowercase()] = if (bot.definition.mode == SimulatedPlayerMode.PK)
+                val key = bot.username.lowercase()
+                soloActivities[key] = if (bot.definition.mode == SimulatedPlayerMode.PK)
                     BotActivity(Skills.ATTACK, "solo Wilderness patrol", 422, "patrols the Wilderness alone")
                 else activities[bot.personality.favoriteSkill] ?: activities.getValue("Fishing")
+                soloAnchors[key] = bot.tile
             }
         }
         Logger.info(javaClass, "initialize", "Organized ${bots.size} simulated players into ${groups.values.distinct().size} activity groups and ${soloActivities.size} solo routines")
     }
 
     fun controlsMovement(bot: SimulatedPlayerBot): Boolean =
-        SimulatedPlayerPopulationManager.activitySettings.enabled && groups.containsKey(bot.username.lowercase())
+        SimulatedPlayerPopulationManager.activitySettings.enabled &&
+            (groups.containsKey(bot.username.lowercase()) || soloActivities.containsKey(bot.username.lowercase()))
 
     fun process(bot: SimulatedPlayerBot, seed: Int) {
         val settings = SimulatedPlayerPopulationManager.activitySettings
         if (!settings.enabled || bot.inCombat()) return
         val key = bot.username.lowercase()
+        if (bot.actionManager.action != null || bot.interactionManager.interaction != null) {
+            saveRealProgress(bot)
+            maybeSave(settings)
+            return
+        }
         val group = groups[key]
         if (group == null) {
-            soloActivities[key]?.let { performActivity(bot, null, it, settings, seed) }
+            val activity = soloActivities[key] ?: return
+            if (!performActivity(bot, activity, settings, seed) && bot.tickCounter % 12L == (seed % 12).toLong()) {
+                val anchor = soloAnchors[key] ?: bot.tile
+                val target = soloMovementTarget(anchor, bot.tickCounter, seed)
+                bot.resetWalkSteps()
+                bot.addWalkSteps(target.x, target.y, 18, true)
+            }
             maybeSave(settings)
             return
         }
@@ -155,21 +205,20 @@ object SimulatedPlayerActivityManager {
             0 -> if (bot.tickCounter % 24L == (seed % 24).toLong()) {
                 effectiveMembers(group).firstOrNull()?.let(bot::faceEntityTile)
             }
-            1 -> performActivity(bot, group, group.activity, settings, seed)
-            else -> if (bot.tickCounter % 20L == (seed % 20).toLong()) {
-                bot.anim(855)
-            }
+            1 -> performActivity(bot, group.activity, settings, seed)
+            else -> Unit
         }
         maybeSave(settings)
     }
 
     fun status(bot: SimulatedPlayerBot): String {
         val key = bot.username.lowercase()
-        val group = groups[key] ?: return soloActivities[key]?.let { "${it.name} (solo)" } ?: "wandering"
+        activeTaskDescriptions[key]?.let { return it }
+        val group = groups[key] ?: return soloActivities[key]?.let { "looking for a nearby task (solo)" } ?: "wandering"
         return when (phase(group, bot.tickCounter)) {
-            0 -> "meeting and banking with ${group.name}"
-            1 -> group.activity.name
-            else -> "taking a break with ${group.name}"
+            0 -> "travelling with ${group.name}"
+            1 -> "looking for a nearby real task with ${group.name}"
+            else -> "moving with ${group.name}"
         }
     }
 
@@ -248,7 +297,7 @@ object SimulatedPlayerActivityManager {
         }
         val activity = activityFor(requestedSkill)
         if (activity == null) {
-            player.sendMessage("Unknown skill. Try Fishing, Woodcutting, Mining, Cooking, Combat, or another skill name.")
+            player.sendMessage("Choose a real resource task: Fishing, Woodcutting, or Mining.")
             return
         }
         group.activity = activity
@@ -315,37 +364,111 @@ object SimulatedPlayerActivityManager {
         player.sendMessage("<col=00ffff>Nearby simulated-player groups</col>")
         nearby.forEach { (group, distance) ->
             val phase = when (phase(group, effectiveMembers(group).first().tickCounter)) {
-                0 -> "meeting and banking"
-                1 -> group.activity.name
-                else -> "resting"
+                0 -> "travelling"
+                1 -> "using nearby resources"
+                else -> "moving"
             }
             val memberCount = effectiveMembers(group).size + if (group.ownerUsername.isNotBlank()) 1 else 0
             player.sendMessage("${group.name}: $memberCount members, $phase ($distance tiles away)")
         }
     }
 
-    private fun performActivity(bot: SimulatedPlayerBot, group: ActivityGroup?, activity: BotActivity, settings: SimulatedPlayerActivitySettings, seed: Int) {
+    private fun performActivity(bot: SimulatedPlayerBot, activity: BotActivity, settings: SimulatedPlayerActivitySettings, seed: Int): Boolean {
+        if (bot.definition.mode == SimulatedPlayerMode.PK) return false
         val interval = settings.actionIntervalTicks.coerceIn(4, 30)
-        if (bot.tickCounter % interval.toLong() != Math.floorMod(seed, interval).toLong()) return
-        val oldLevel = bot.skills.getLevelForXp(activity.skill)
-        val gained = settings.baseXpPerAction.coerceIn(1.0, 500.0) + oldLevel * 0.45
-        bot.anim(activity.animation)
-        bot.skills.addSkillXpRefresh(activity.skill, gained)
-        val newLevel = bot.skills.getLevelForXp(activity.skill)
-        val state = progress.getOrPut(bot.username.lowercase()) { SavedBotProgress() }
-        state.xp[activity.skill] = bot.skills.getXp(activity.skill)
-        state.actions++
-        dirty = true
-        if (newLevel > oldLevel) {
-            if (activity.skill == Skills.ATTACK || activity.skill == Skills.STRENGTH ||
-                activity.skill == Skills.DEFENSE || activity.skill == Skills.HITPOINTS ||
-                activity.skill == Skills.RANGE || activity.skill == Skills.PRAYER ||
-                activity.skill == Skills.MAGIC || activity.skill == Skills.SUMMONING) {
-                bot.appearance.generateAppearanceData()
-            }
-            bot.spotAnim(2456)
+        if (bot.tickCounter % interval.toLong() != Math.floorMod(seed, interval).toLong()) return false
+        if (bot.inventory.freeSlots < 4) bot.inventory.reset()
+
+        val preferred = when (activity.skill) {
+            Skills.WOODCUTTING -> 0
+            Skills.MINING -> 1
+            Skills.FISHING -> 2
+            else -> Math.floorMod(seed, 3)
         }
-        if (group != null && bot === effectiveMembers(group).firstOrNull()) trainParticipatingPlayers(group, activity, settings)
+        val started = when (preferred) {
+            0 -> tryWoodcutting(bot) || tryMining(bot) || tryFishing(bot)
+            1 -> tryMining(bot) || tryFishing(bot) || tryWoodcutting(bot)
+            else -> tryFishing(bot) || tryWoodcutting(bot) || tryMining(bot)
+        }
+        if (!started) activeTaskDescriptions.remove(bot.username.lowercase())
+        return started
+    }
+
+    private fun tryWoodcutting(bot: SimulatedPlayerBot): Boolean {
+        val tree = closestObject(bot) { obj ->
+            val type = TreeType.forObject(bot, obj)
+            type != null && type.level <= bot.skills.getLevelForXp(Skills.WOODCUTTING)
+        } ?: return false
+        if (!bot.inventory.containsItem(1351)) bot.inventory.addItem(1351)
+        activeTaskDescriptions[bot.username.lowercase()] = "woodcutting at ${tree.definitions.name}"
+        ObjectHandler.handleOption1(bot, tree)
+        return true
+    }
+
+    private fun tryMining(bot: SimulatedPlayerBot): Boolean {
+        val rock = closestObject(bot) { obj ->
+            val type = rockType(obj.definitions.name)
+            type != null && type.level <= bot.skills.getLevelForXp(Skills.MINING)
+        } ?: return false
+        if (!bot.inventory.containsItem(1265)) bot.inventory.addItem(1265)
+        activeTaskDescriptions[bot.username.lowercase()] = "mining at ${rock.definitions.name}"
+        ObjectHandler.handleOption1(bot, rock)
+        return true
+    }
+
+    private fun tryFishing(bot: SimulatedPlayerBot): Boolean {
+        val candidate = World.getNPCsInChunkRange(bot.chunkId, 2).asSequence()
+            .filter { it.plane == bot.plane && Utils.getDistance(bot.tile, it.tile) <= 15 }
+            .mapNotNull { npc -> fishingSpots[npc.id]?.let { npc to it } }
+            .filter { (_, spot) -> spot.level <= bot.skills.getLevelForXp(Skills.FISHING) }
+            .minByOrNull { (npc, _) -> Utils.getDistance(bot.tile, npc.tile) }
+            ?: return false
+        val (npc, spot) = candidate
+        spot.tool.firstOrNull()?.let { if (!bot.inventory.containsItem(it)) bot.inventory.addItem(it) }
+        spot.bait?.firstOrNull()?.let { if (!bot.inventory.containsItem(it)) bot.inventory.addItem(it, 500) }
+        activeTaskDescriptions[bot.username.lowercase()] = "fishing at a real fishing spot"
+        NPCHandler.handleOption1(bot, npc)
+        return true
+    }
+
+    private fun closestObject(bot: SimulatedPlayerBot, predicate: (GameObject) -> Boolean): GameObject? =
+        World.getAllObjectsInChunkRange(bot.chunkId, 2).asSequence()
+            .filter { it.plane == bot.plane && Utils.getDistance(bot.tile, it.tile) <= 15 }
+            .filter(predicate)
+            .minByOrNull { Utils.getDistance(bot.tile, it.tile) }
+
+    private fun rockType(name: String): RockType? = when (name) {
+        "Clay rocks", "Clay vein", "Clay rock" -> RockType.CLAY
+        "Copper ore rocks", "Copper ore vein", "Copper rock" -> RockType.COPPER
+        "Tin ore rocks", "Tin ore vein", "Tin rock" -> RockType.TIN
+        "Iron ore rocks", "Iron ore vein" -> RockType.IRON
+        "Silver ore rocks", "Silver ore vein" -> RockType.SILVER
+        "Gold ore rocks", "Gold ore vein" -> RockType.GOLD
+        "Coal rocks", "Coal vein" -> RockType.COAL
+        "Mithril ore rocks", "Mithril ore vein" -> RockType.MITHRIL
+        "Adamantite ore rocks", "Adamantite ore vein" -> RockType.ADAMANT
+        "Runite ore rocks" -> RockType.RUNE
+        "Granite rocks" -> RockType.GRANITE
+        "Sandstone rocks" -> RockType.SANDSTONE
+        "Gem rocks" -> RockType.GEM
+        else -> null
+    }
+
+    private fun saveRealProgress(bot: SimulatedPlayerBot) {
+        if (bot.tickCounter % 20L != 0L) return
+        val state = progress.getOrPut(bot.username.lowercase()) { SavedBotProgress() }
+        var changed = false
+        for (skill in 0 until Skills.SIZE) {
+            val xp = bot.skills.getXp(skill)
+            if (xp > (state.xp[skill] ?: 0.0)) {
+                state.xp[skill] = xp
+                changed = true
+            }
+        }
+        if (changed) {
+            state.actions++
+            dirty = true
+        }
     }
 
     private fun installPlayerGroup(player: Player, name: String, bots: List<SimulatedPlayerBot>, activity: BotActivity) {
@@ -388,37 +511,18 @@ object SimulatedPlayerActivityManager {
         }
         installPlayerGroup(player, current.name, bots, current.activity)
         savePlayerBots(player, bots)
-        player.sendMessage("${bot.displayName} left your activity group and returned to its regional team.")
+        player.sendMessage("${bot.displayName} left your activity group and returned to its original routine.")
     }
 
     private fun savePlayerBots(player: Player, bots: List<SimulatedPlayerBot>) {
         player.set(PLAYER_GROUP_BOTS_KEY, bots.joinToString("|") { it.username })
     }
 
-    private fun trainParticipatingPlayers(group: ActivityGroup, activity: BotActivity, settings: SimulatedPlayerActivitySettings) {
-        val bots = effectiveMembers(group)
-        if (bots.isEmpty()) return
-        World.players.asSequence()
-            .filter { !it.isHeadless && !it.isDead && !it.hasFinished() && !it.isLocked && !it.inCombat() }
-            .filter { player ->
-                val owns = group.ownerUsername.equals(player.username, true)
-                val joined = savedString(player, PLAYER_JOINED_KEY).equals(group.name, true)
-                (owns || joined) && bots.any { it.withinDistance(player, 8) }
-            }
-            .filter { it.actionManager.action == null }
-            .forEach { player ->
-                val level = player.skills.getLevelForXp(activity.skill)
-                val xp = settings.baseXpPerAction.coerceIn(1.0, 500.0) + level * 0.45
-                player.anim(activity.animation)
-                player.skills.addXp(activity.skill, xp)
-            }
-    }
-
     private fun activityFor(raw: String): BotActivity? {
         val requested = raw.trim()
-        if (requested.equals("combat", true)) return activities.getValue("Attack")
         return activities.entries.firstOrNull {
-            it.key.equals(requested, true) || it.value.name.equals(requested, true)
+            it.value.skill in setOf(Skills.FISHING, Skills.WOODCUTTING, Skills.MINING) &&
+                (it.key.equals(requested, true) || it.value.name.equals(requested, true))
         }?.value
     }
 
@@ -467,6 +571,13 @@ object SimulatedPlayerActivityManager {
         val step = Math.floorMod((tick / 18L).toInt() + index * 2 + seed, offsets.size)
         val (x, y) = offsets[step]
         return Tile.of(formation.x + x, formation.y + y, formation.plane)
+    }
+
+    private fun soloMovementTarget(anchor: Tile, tick: Long, seed: Int): Tile {
+        val offsets = arrayOf(5 to 0, 4 to 4, 0 to 5, -4 to 4, -5 to 0, -4 to -4, 0 to -5, 4 to -4)
+        val step = Math.floorMod((tick / 18L).toInt() + seed, offsets.size)
+        val (x, y) = offsets[step]
+        return Tile.of(anchor.x + x, anchor.y + y, anchor.plane)
     }
 
     private fun loadProgress() {

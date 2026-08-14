@@ -74,25 +74,25 @@ The same identity also guides Ollama replies, so a bot remains recognizable
 across public, private, and clan conversations and after restarting the game.
 
 The population also lives instead of only standing at spawn. Most town players
-form stable regional groups of up to four and cycle between gathering, training
-a shared skill, banking, and resting. Roughly one player in five follows an
-independent routine instead: it wanders locally, performs its personality's
-favorite activity, gains skill XP, and can still be recruited into your group.
-Recognizable skilling and combat animations are visible to nearby players, and
-new levels survive restarts in the local world save. Inspect a player to see its
-current activity, group, accurate combat level, and personal goal. Combat
-level-ups refresh the visible player level immediately, including the base and
-Summoning adjustment shown in the Wilderness. Wilderness groups patrol and PK
-together instead of performing town skilling routines.
+form stable regional groups of up to four, while roughly one player in five
+follows an independent routine. Bots search for actual nearby trees, rocks, and
+fishing spots, travel to them, and invoke the same woodcutting, mining, and
+fishing actions used by the human player. Tools, bait, skill requirements,
+inventory space, XP gains, depleted resources, and respawns therefore use the
+real game systems. When no valid resource is nearby, bots travel or search
+instead of standing still and looping an unrelated emote. Their new levels
+survive restarts in the local world save. Inspect a player to see its current
+real task, group, accurate combat level, and personal goal. Wilderness bots
+patrol and PK instead of selecting skilling tasks.
 
 Use `::botgroups` to list up to eight groups within 32 tiles and see whether
 each group is meeting, training, or resting. Group membership and progression
 are stable across restarts.
 
 Right-click a simulated player and choose **Group options** to join its activity
-group. Stay within eight tiles while the group is training to perform the same
-animation and earn normal skill XP at your configured XP rate. Selecting Group
-options on the same group again leaves it.
+group. Selecting Group options on the same group again leaves it. A group you
+lead can choose Fishing, Woodcutting, or Mining; members use whichever matching
+real resources are available nearby.
 
 To lead your own persistent group, use these commands:
 
@@ -109,6 +109,20 @@ again on one of your members to send that bot back to its regional team or solo
 routine. You can
 lead up to seven bots, making eight group members including you. Your invited
 bots gather around and follow you while carrying out the selected routine.
+
+## Website highscores
+
+The website includes a private local highscore viewer for your character and
+the persistent simulated-player population. In game, enter:
+
+```text
+::exporthighscores
+```
+
+This writes `saves/highscores-export.json`. Open the project website, find
+**Local Highscores**, and choose that file. You can rank the export overall or
+by any of the 25 skills. The browser reads the JSON locally; it is never sent to
+a server. Run the command again whenever you want a fresh snapshot.
 
 Right-click a simulated player for its social options:
 
