@@ -1575,6 +1575,8 @@ public class Player extends Entity {
 		setPlayerOption("Trade with", 4);
 		if (Settings.getConfig().isSinglePlayer())
 			setPlayerOption("Clan options", 5);
+		if (Settings.getConfig().isSinglePlayer())
+			setPlayerOption("Group options", 6);
 	}
 
 	@SuppressWarnings("deprecation")

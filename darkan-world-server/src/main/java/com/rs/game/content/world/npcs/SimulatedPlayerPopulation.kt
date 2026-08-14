@@ -46,6 +46,7 @@ data class SimulatedPlayerPopulation(
     val regions: List<SimulatedPlayerRegion> = emptyList(),
     val companions: SimulatedPlayerCompanionSettings = SimulatedPlayerCompanionSettings(),
     val economy: SimulatedPlayerEconomySettings = SimulatedPlayerEconomySettings(),
+    val activities: SimulatedPlayerActivitySettings = SimulatedPlayerActivitySettings(),
     val ollama: SimulatedPlayerOllamaSettings = SimulatedPlayerOllamaSettings()
 )
 
@@ -67,6 +68,8 @@ object SimulatedPlayerPopulationManager {
     var economySettings = SimulatedPlayerEconomySettings()
         private set
     var companionSettings = SimulatedPlayerCompanionSettings()
+        private set
+    var activitySettings = SimulatedPlayerActivitySettings()
         private set
     var ollamaSettings = SimulatedPlayerOllamaSettings()
         private set
@@ -92,6 +95,7 @@ object SimulatedPlayerPopulationManager {
 
         economySettings = population.economy
         companionSettings = population.companions
+        activitySettings = population.activities
         ollamaSettings = population.ollama
         SimulatedPlayerOllama.configure()
 
@@ -115,6 +119,7 @@ object SimulatedPlayerPopulationManager {
 			spawnedBots += SimulatedPlayerBot(definition)
         }
 
+        SimulatedPlayerActivityManager.initialize(spawnedBots)
         SimulatedPlayerSocial.initializeClans()
 
         Logger.info(javaClass, "load", "Spawned ${spawnedBots.size} simulated players")
@@ -168,6 +173,7 @@ object SimulatedPlayerPopulationManager {
     }
 
     fun removeAll() {
+		SimulatedPlayerActivityManager.flush()
 		spawnedBots.forEach { bot -> if (!bot.hasFinished()) bot.finish() }
         spawnedBots.clear()
     }

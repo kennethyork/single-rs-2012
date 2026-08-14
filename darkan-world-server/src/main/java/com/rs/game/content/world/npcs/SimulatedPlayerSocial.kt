@@ -47,6 +47,7 @@ object SimulatedPlayerSocial {
     @JvmStatic
     fun restoreSocialState(player: Player) {
         if (!Settings.getConfig().isSinglePlayer || player.isHeadless) return
+        SimulatedPlayerActivityManager.restorePlayerState(player)
         val friends = SimulatedPlayerPopulationManager.activeBots()
             .filter { bot -> player.social.friends.any { it.equals(bot.username, true) } }
             .map { Friend(it.account, Settings.getConfig().worldInfo, false) }
@@ -236,23 +237,25 @@ object SimulatedPlayerSocial {
 
     private fun reply(bot: SimulatedPlayerBot, player: Player, rawMessage: String, privateMessage: Boolean): String {
         val message = rawMessage.lowercase(Locale.ROOT)
+        val personality = bot.personality
+        fun pick(lines: List<String>) = lines[choice(message + bot.username, lines.size)]
         return when {
             wantsClanInvite(message) -> clanName(bot)?.let {
                 if (privateMessage) "Welcome to $it! Check your Clan Chat tab." else "PM me 'join clan' and I'll invite you, ${player.displayName}."
             } ?: "I'm not in a clan right now."
-            any(message, "hello", "hi", "hey", "yo") -> listOf("Hey ${player.displayName}!", "Hello!", "Hey, how's it going?")[choice(message, 3)]
-            any(message, "how are you", "how r u", "you good") -> listOf("Doing well, just training.", "Pretty good! How about you?", "Can't complain.")[choice(message, 3)]
-            any(message, "what are you doing", "what you doing", "wyd") -> "I'm training around ${bot.definition.location.ifBlank { "Gielinor" }}."
+            any(message, "hello", "hi", "hey", "yo") -> pick(personality.greetings)
+            any(message, "how are you", "how r u", "you good") -> pick(personality.moods)
+            any(message, "what are you doing", "what you doing", "wyd") -> "I'm trying to ${personality.currentGoal}."
             any(message, "where", "location") -> "I'm around ${bot.definition.location.ifBlank { "Gielinor" }} right now."
             any(message, "level", "stats", "combat") -> "I'm combat level ${bot.skills.combatLevelWithSummoning}."
             any(message, "clan") -> clanName(bot)?.let { "I'm in $it. PM me 'join clan' if you want in." }
                 ?: "I'm not in a clan right now."
             any(message, "trade", "buy", "sell") -> "Send me a trade request and I'll show you what I've got."
-            any(message, "help", "what should i do") -> "Try exploring, training a skill, or ask me about my clan."
-            any(message, "thanks", "thank you", "ty") -> "No problem!"
-            any(message, "bye", "cya", "later") -> "See you around!"
-            message.endsWith("?") -> listOf("I think so.", "Maybe - it's worth a try.", "Not sure, what do you think?")[choice(message, 3)]
-            else -> listOf("Nice.", "Yeah, I get you.", "That sounds good.", "Fair enough, ${player.displayName}.", "Tell me more.")[choice(message, 5)]
+            any(message, "help", "what should i do") -> pick(personality.suggestions + "You could try ${personality.favoriteActivity} or train ${personality.favoriteSkill}.")
+            any(message, "thanks", "thank you", "ty") -> pick(listOf("No problem!", "Any time.", "Glad to help."))
+            any(message, "bye", "cya", "later") -> pick(listOf("See you around!", "Take care.", "Good luck out there."))
+            message.endsWith("?") -> pick(personality.reactions + listOf("What do you think?", "It's worth a try."))
+            else -> pick(personality.reactions + listOf("Tell me more.", "Fair enough, ${player.displayName}."))
         }
     }
 

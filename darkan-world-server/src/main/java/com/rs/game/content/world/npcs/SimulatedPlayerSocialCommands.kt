@@ -38,5 +38,18 @@ object SimulatedPlayerSocialCommands {
                 else -> SimulatedPlayerCompanionManager.summonClanParty(player)
             }
         }
+        Commands.add(Rights.PLAYER, "botgroups", "Lists nearby simulated-player activity groups.") { player, _ ->
+            SimulatedPlayerActivityManager.sendNearbyGroups(player)
+        }
+        Commands.add(Rights.PLAYER, "botgroup,activitygroup [create/skill/status/leave/disband]", "Manages your simulated-player activity group.") { player, args ->
+            when (args.firstOrNull()?.lowercase()) {
+                "create", "form" -> SimulatedPlayerActivityManager.createPlayerGroup(player, args.drop(1).joinToString(" "))
+                "skill", "activity", "train" -> SimulatedPlayerActivityManager.setPlayerGroupSkill(player, args.drop(1).joinToString(" "))
+                "leave" -> SimulatedPlayerActivityManager.leaveJoinedGroup(player)
+                "disband", "delete" -> SimulatedPlayerActivityManager.disbandPlayerGroup(player)
+                "status", "list", null -> SimulatedPlayerActivityManager.sendPlayerGroupStatus(player)
+                else -> player.sendMessage("Use ::botgroup create [name], ::botgroup skill [skill], ::botgroup status, ::botgroup leave, or ::botgroup disband.")
+            }
+        }
     }
 }

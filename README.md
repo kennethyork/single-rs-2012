@@ -42,9 +42,10 @@ text is ignored. The username `root` has access to owner commands.
 - A local 2012-era world and matching client launched in one process
 - Local characters, Grand Exchange, highscores, logs, and world state
 - 286 simulated players with individual names, appearances, equipment, skills,
-  and combat levels
+  combat levels, persistent progression, and visible daily routines
 - Social players throughout towns, Daemonheim, and the Grand Exchange
 - Public chat, private messages, bot-to-bot chatter, and persistent clans
+- Regional bot groups that meet, train, bank, rest, and progress together
 - A Player Marketplace for direct trading with simulated players
 - 88 attackable Wilderness PK bots
 - Activity helpers for bosses, Dungeoneering, and Pest Control
@@ -63,6 +64,46 @@ Wilderness players are the only population bots that can attack or be attacked.
 
 Nearby simulated players can answer public chat. You can also message them from
 the normal Friends List and speak with them in clan chat.
+
+Each simulated player has an individual, stable personality tied to its name.
+Every bot combines an archetype, temperament, speech style, favorite skill,
+favorite activity, personal goal, and conversational quirk. Friendly skillers,
+PKers, traders, clan loyalists, jokers, explorers, veterans, and boss hunters
+therefore still sound different from other players in the same broad role.
+The same identity also guides Ollama replies, so a bot remains recognizable
+across public, private, and clan conversations and after restarting the game.
+
+The population also lives instead of only standing at spawn. Town players form
+stable regional groups of up to four and cycle between gathering, training a
+shared skill, banking, and resting. Their recognizable skilling and combat
+animations are visible to nearby players, their skill XP increases gradually,
+and their new levels survive restarts in the local world save. Inspect a player
+to see its current activity, group, leader, and personal goal. Wilderness groups
+patrol and PK together instead of performing town skilling routines.
+
+Use `::botgroups` to list up to eight groups within 32 tiles and see whether
+each group is meeting, training, or resting. Group membership and progression
+are stable across restarts.
+
+Right-click a simulated player and choose **Group options** to join its activity
+group. Stay within eight tiles while the group is training to perform the same
+animation and earn normal skill XP at your configured XP rate. Selecting Group
+options on the same group again leaves it.
+
+To lead your own persistent group, use these commands:
+
+| Command | Purpose |
+| --- | --- |
+| `::botgroup create My Team` | Form and name your group |
+| `::botgroup skill Mining` | Choose the skill everyone trains |
+| `::botgroup status` | Show your membership, activity, and invited bots |
+| `::botgroup leave` | Leave a bot-led group |
+| `::botgroup disband` | Disband the group you lead |
+
+After creating one, choose **Group options** on bots to invite them. Choose it
+again on one of your members to send that bot back to its regional team. You can
+lead up to seven bots, making eight group members including you. Your invited
+bots gather around and follow you while carrying out the selected routine.
 
 Right-click a simulated player for its social options:
 
@@ -114,9 +155,10 @@ does not overwrite it.
 
 The release configuration is at
 `world/data/npcs/simulated-players.json`. From a source checkout, it is at
-`darkan-world-server/data/npcs/simulated-players.json`. Its `ollama` section lets
-you change the model, endpoint, timeout, memory length, cooldowns, response
-delay, and history persistence.
+`darkan-world-server/data/npcs/simulated-players.json`. Its `activities` section
+controls group size, action speed, XP per action, and save frequency. Its
+`ollama` section lets you change the model, endpoint, timeout, memory length,
+cooldowns, response delay, and history persistence.
 
 With the default `http://127.0.0.1:11434` endpoint, prompts and model responses
 stay on your computer. Conversation history is saved to
@@ -127,8 +169,8 @@ configure a remote endpoint, your messages are sent to that service instead.
 
 Everything unique to your game is stored under `saves/`. To back up or move your
 world, close the game normally and copy that entire folder. This includes
-characters, clans, Grand Exchange offers, highscores, persistent world state,
-and Ollama conversation memory.
+characters, clans, Grand Exchange offers, highscores, bot skill progression,
+persistent world state, and Ollama conversation memory.
 
 Do not replace `saves/` when updating the game. Extract the new release, then
 copy your existing `saves/` folder into the new game directory before starting.

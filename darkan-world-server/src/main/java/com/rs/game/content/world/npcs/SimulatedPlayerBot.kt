@@ -29,6 +29,7 @@ internal fun simulatedPlayerAccount(name: String) = Account(name).also { it.righ
 
 /** A real, server-controlled Player entity with no attached game client. */
 class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(simulatedPlayerAccount(definition.name)) {
+    val personality = personalityFor(definition)
     private val home = Tile.of(definition.x, definition.y, definition.plane)
     private val seed = definition.name.hashCode().let { if (it == Int.MIN_VALUE) 0 else abs(it) }
     private var nextChatTick = 12L + seed % 25
@@ -41,6 +42,7 @@ class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(sim
         botSession.setEncoder(WorldEncoder(this, botSession))
         init(botSession, account, ScreenMode.FIXED.ordinal, 765, 503, null)
         configureSkills()
+        SimulatedPlayerActivityManager.restoreProgress(this)
         configureAppearance()
         startHeadless()
         setCanPvp(definition.mode == SimulatedPlayerMode.PK && WildernessController.isAtWild(home))
@@ -64,12 +66,14 @@ class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(sim
             setCanPvp(false)
         }
 
+        SimulatedPlayerActivityManager.process(this, seed)
+
         if (tickCounter >= nextChatTick) {
             val spoke = SimulatedPlayerChat.trySpeak(this, seed)
             nextChatTick = tickCounter + if (spoke) 100L + seed % 80 else 30L + seed % 35
         }
 
-        if (!inCombat() && definition.wander && tickCounter % (8L + seed % 9) == 0L) {
+        if (!SimulatedPlayerActivityManager.controlsMovement(this) && !inCombat() && definition.wander && tickCounter % (8L + seed % 9) == 0L) {
             val radius = 5
             val x = home.x + ((seed + tickCounter.toInt() * 3) % (radius * 2 + 1)) - radius
             val y = home.y + ((seed / 7 + tickCounter.toInt() * 5) % (radius * 2 + 1)) - radius
@@ -83,6 +87,11 @@ class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(sim
         viewer.sendMessage("<col=00ffff>${displayName}'s player profile</col>")
         viewer.sendMessage("Combat: ${skills.combatLevelWithSummoning}  Total level: ${skills.totalLevel}")
         viewer.sendMessage("Clan: ${social.clanName ?: "None"}")
+        viewer.sendMessage("Personality: ${personality.title}; ${personality.temperament}, ${personality.speechStyle}")
+        viewer.sendMessage("Favorites: ${personality.favoriteSkill} and ${personality.favoriteActivity}")
+        viewer.sendMessage("Current goal: ${personality.currentGoal}")
+        viewer.sendMessage("Activity: ${SimulatedPlayerActivityManager.status(this)}")
+        viewer.sendMessage("Group: ${SimulatedPlayerActivityManager.groupDescription(this)}")
         viewer.sendMessage("Attack ${skills.getLevelForXp(Constants.ATTACK)}, Strength ${skills.getLevelForXp(Constants.STRENGTH)}, Defence ${skills.getLevelForXp(Constants.DEFENSE)}, Constitution ${skills.getLevelForXp(Constants.HITPOINTS)}")
         viewer.sendMessage("Ranged ${skills.getLevelForXp(Constants.RANGE)}, Magic ${skills.getLevelForXp(Constants.MAGIC)}, Prayer ${skills.getLevelForXp(Constants.PRAYER)}, Summoning ${skills.getLevelForXp(Constants.SUMMONING)}")
         viewer.sendMessage("Equipment: ${equipmentNames.ifEmpty { "None" }}")
@@ -97,6 +106,7 @@ class SimulatedPlayerBot(val definition: SimulatedPlayerDefinition) : Player(sim
 
     override fun finish() {
         if (hasFinished()) return
+        SimulatedPlayerActivityManager.onBotFinished()
         setFinished(true)
         World.removePlayer(this)
         com.rs.game.map.ChunkManager.updateChunks(this)
@@ -201,13 +211,13 @@ private object SimulatedPlayerChat {
 
     private fun linesFor(bot: SimulatedPlayerBot, listener: Player): List<String> {
         if (bot.definition.mode == SimulatedPlayerMode.PK) {
-            return if (bot.inCombat()) listOf(
+            return if (bot.inCombat()) bot.personality.ambient + listOf(
                 "Sit!",
                 "You're not getting away!",
                 "Should've banked first.",
                 "Good luck escaping this one.",
                 "Protect item might help!"
-            ) else listOf(
+            ) else bot.personality.ambient + listOf(
                 "Watch your back out here.",
                 "Anyone seen a white dot?",
                 "The Wilderness is quiet today.",
@@ -216,7 +226,7 @@ private object SimulatedPlayerChat {
             )
         }
 
-        if (bot.inCombat()) return listOf(
+        if (bot.inCombat()) return bot.personality.ambient + listOf(
             "Almost got it.",
             "Come on, hit!",
             "I should've brought more food.",
@@ -224,7 +234,7 @@ private object SimulatedPlayerChat {
             "There goes another potion."
         )
 
-        return when (bot.definition.location.lowercase()) {
+        return bot.personality.ambient + when (bot.definition.location.lowercase()) {
             "grand exchange" -> listOf(
                 "Anyone selling sharks?",
                 "Price check on dragon bones?",

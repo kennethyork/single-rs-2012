@@ -15,6 +15,13 @@
     "minimumGuidePricePercent": 50,
     "maximumGuidePricePercent": 200
   },
+  "activities": {
+    "enabled": true,
+    "groupSize": 4,
+    "actionIntervalTicks": 8,
+    "baseXpPerAction": 24.0,
+    "saveIntervalTicks": 100
+  },
   "ollama": {
     "enabled": true,
     "baseUrl": "http://127.0.0.1:11434",
