@@ -38,8 +38,8 @@ public class Class119 {
 		client.GAME_CONNECTION_CONTEXT.queuePacket(tcpmessage_3);
 	}
 	public static void method2077() {
-		Class393.preferences.setValue(Class393.preferences.removeRoofs, 1);
-		Class393.preferences.setValue(Class393.preferences.removeRoofsOptionOverride, 1);
+		Class393.preferences.setValue(Class393.preferences.removeRoofs, 2);
+		Class393.preferences.setValue(Class393.preferences.removeRoofsOptionOverride, 2);
 		Class393.preferences.setValue(Class393.preferences.groundDecor, 1);
 		Class393.preferences.setValue(Class393.preferences.groundBlending, 1);
 		Class393.preferences.setValue(Class393.preferences.idleAnimations, 0);

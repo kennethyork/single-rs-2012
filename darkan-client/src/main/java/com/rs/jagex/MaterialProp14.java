@@ -3,8 +3,8 @@ package com.rs.jagex;
 public class MaterialProp14 extends MaterialProperty {
 
 	public static void method15393() {
-		Class393.preferences.setValue(Class393.preferences.removeRoofs, 1);
-		Class393.preferences.setValue(Class393.preferences.removeRoofsOptionOverride, 1);
+		Class393.preferences.setValue(Class393.preferences.removeRoofs, 2);
+		Class393.preferences.setValue(Class393.preferences.removeRoofsOptionOverride, 2);
 		Class393.preferences.setValue(Class393.preferences.groundDecor, 0);
 		Class393.preferences.setValue(Class393.preferences.fog, 0);
 		Class393.preferences.setValue(Class393.preferences.groundBlending, 0);

@@ -62,7 +62,7 @@ Wilderness players are the only population bots that can attack or be attacked.
 
 ## Single-RSC comparison
 
-Current comparison: **Single RS 2012 v0.15.0** and **Single-RSC v2.8.2**.
+Current comparison: **Single RS 2012 v0.15.1** and **Single-RSC v2.8.2**.
 
 | Area | Single RS 2012 | Single-RSC |
 |---|---|---|
