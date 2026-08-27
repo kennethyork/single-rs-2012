@@ -30,14 +30,34 @@ mkdir -p "$LOG_DIR"
 #
 # Hardcoding screen coordinates silently broke the moment the emulator's
 # resolution changed -- the taps still "worked", they just landed on nothing.
+# Deriving them from `wm size` then broke too: whether it reports the display
+# portrait or landscape depends on the AVD, so the axis swap that was right for
+# the default skin was wrong for -skin 800x600.
+#
+# The screenshot is the screen as actually rendered, so measure that instead of
+# reasoning about orientation.
+screen_size() {
+    adb exec-out screencap -p > "$LOG_DIR/.probe.png" 2>/dev/null || true
+    python3 - "$LOG_DIR/.probe.png" <<'PYEOF'
+import struct, sys
+try:
+    with open(sys.argv[1], 'rb') as f:
+        head = f.read(24)
+    w, h = struct.unpack('>II', head[16:24])
+    print(w, h)
+except Exception:
+    print(0, 0)
+PYEOF
+}
+
 tap_game() {
     local gx=$1 gy=$2
-    # wm size reports the display's natural (portrait) orientation while the
-    # activity runs landscape, so the axes come back swapped.
-    local portrait width height
-    portrait=$(adb shell wm size | sed 's/.*: //' | tr -d '\r')
-    height=${portrait%x*}
-    width=${portrait#*x}
+    local width height
+    read -r width height <<<"$(screen_size)"
+    if [ "${width:-0}" -eq 0 ]; then
+        echo "  cannot read the screen size; skipping tap"
+        return
+    fi
     # Per-mille scale, matching GameSurfaceView.screenToGame's min(fit).
     local sx sy scale
     scale=$(( width * 1000 / GAME_W ))
