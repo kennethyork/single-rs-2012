@@ -67,6 +67,7 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
                 gameMouseY = g[1];
                 mouseButtonDown = 1;
                 postDelayed(() -> mouseButtonDown = 0, 50);
+                tapClient(g[0], g[1], java.awt.event.MouseEvent.BUTTON1);
                 return true;
             }
 
@@ -78,6 +79,8 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
                 gameMouseY = g[1];
                 mouseButtonDown = 2;
                 postDelayed(() -> mouseButtonDown = 0, 100);
+                // Long press is the game's right click, for context menus.
+                tapClient(g[0], g[1], java.awt.event.MouseEvent.BUTTON3);
             }
 
             @Override
@@ -103,6 +106,31 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
                 return true;
             }
         });
+    }
+
+    /**
+     * Sends a mouse event to whatever component the client is listening on.
+     *
+     * The client registers its mouse listeners on Class351.gameCanvas, and the
+     * AWT shim has no event queue to feed them, so touches are delivered here
+     * directly. Coordinates are in the client's own frame space, not the view's.
+     */
+    private void dispatchToClient(int id, int gameX, int gameY, int button) {
+        java.awt.Canvas canvas = com.rs.jagex.Class351.gameCanvas;
+        if (canvas == null) return;
+        canvas.dispatchInputEvent(new java.awt.event.MouseEvent(
+                canvas, id, System.currentTimeMillis(), 0, gameX, gameY,
+                id == java.awt.event.MouseEvent.MOUSE_CLICKED ? 1 : 0,
+                button == java.awt.event.MouseEvent.BUTTON3, button));
+    }
+
+    /** A tap: move there, press, release, click -- the sequence AWT would send. */
+    private void tapClient(int gameX, int gameY, int button) {
+        dispatchToClient(java.awt.event.MouseEvent.MOUSE_MOVED, gameX, gameY,
+                java.awt.event.MouseEvent.NOBUTTON);
+        dispatchToClient(java.awt.event.MouseEvent.MOUSE_PRESSED, gameX, gameY, button);
+        dispatchToClient(java.awt.event.MouseEvent.MOUSE_RELEASED, gameX, gameY, button);
+        dispatchToClient(java.awt.event.MouseEvent.MOUSE_CLICKED, gameX, gameY, button);
     }
 
     /** Called by the engine thread each frame. */
@@ -190,7 +218,12 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_MOVE:
                 int[] c = screenToGame(event.getX(), event.getY());
-                if (c != null) { gameMouseX = c[0]; gameMouseY = c[1]; }
+                if (c != null) {
+                    gameMouseX = c[0];
+                    gameMouseY = c[1];
+                    dispatchToClient(java.awt.event.MouseEvent.MOUSE_MOVED, c[0], c[1],
+                            java.awt.event.MouseEvent.NOBUTTON);
+                }
                 break;
             case MotionEvent.ACTION_UP:
                 mouseButtonDown = 0;

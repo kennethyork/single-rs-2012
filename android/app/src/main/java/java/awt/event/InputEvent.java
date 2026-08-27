@@ -31,6 +31,8 @@ public abstract class InputEvent {
 
     public Component getComponent() { return source; }
     public long getWhen() { return when; }
+    public int getID() { return id; }
+    public Component getSource() { return source; }
     public int getModifiersEx() { return modifiers; }
 
     public void consume() { consumed = true; }

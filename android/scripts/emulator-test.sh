@@ -81,11 +81,13 @@ if grep -qF "first frame presented" "$LOG_DIR/logcat-full.txt" 2>/dev/null; then
         # the display is portrait 320x640, so which space input tap uses is not
         # obvious -- try each candidate on a separate pass and let the
         # screenshots and the logged touch coordinates say which one lands.
-        case "$shot" in
-            1) echo "  tap A (landscape space)"; adb shell input tap 315 176 || true ;;
-            2) echo "  tap B (portrait, rotated cw)"; adb shell input tap 176 325 || true ;;
-            3) echo "  tap C (portrait, rotated ccw)"; adb shell input tap 144 315 || true ;;
-        esac
+        # adb input tap uses the activity's own landscape space, confirmed by
+        # the logged touch: a tap at 315,176 arrived as raw=315.0,176.0 in a
+        # 640x320 view. That is the first-run screen's "Auto Setup" button.
+        if [ "$shot" = "1" ]; then
+            echo "  tapping Auto Setup"
+            adb shell input tap 315 176 || true
+        fi
     done
 fi
 

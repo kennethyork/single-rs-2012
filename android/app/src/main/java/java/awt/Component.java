@@ -1,6 +1,9 @@
 package java.awt;
 
 import java.awt.event.FocusListener;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -119,6 +122,61 @@ public class Component implements java.io.Serializable, ImageObserver {
     public void setFont(Font f) { this.font = f; }
     public void remove(MenuComponent comp) {}
     public boolean postEvent(Event evt) { return false; }
+
+    /**
+     * Delivers an event to this component's listeners.
+     *
+     * The shim collects listeners the client registers but has no event queue to
+     * feed them -- there is no AWT underneath. com.rs.android.GameSurfaceView
+     * calls this to turn Android touches into the mouse events the client is
+     * waiting for.
+     *
+     * Takes an InputEvent rather than an AWTEvent: in this shim InputEvent is
+     * its own root, not an AWTEvent subclass.
+     */
+    public void dispatchInputEvent(InputEvent event) {
+        if (event instanceof MouseEvent mouse) {
+            switch (mouse.getID()) {
+                case MouseEvent.MOUSE_PRESSED:
+                    for (MouseListener l : mouseListeners) l.mousePressed(mouse);
+                    break;
+                case MouseEvent.MOUSE_RELEASED:
+                    for (MouseListener l : mouseListeners) l.mouseReleased(mouse);
+                    break;
+                case MouseEvent.MOUSE_CLICKED:
+                    for (MouseListener l : mouseListeners) l.mouseClicked(mouse);
+                    break;
+                case MouseEvent.MOUSE_ENTERED:
+                    for (MouseListener l : mouseListeners) l.mouseEntered(mouse);
+                    break;
+                case MouseEvent.MOUSE_EXITED:
+                    for (MouseListener l : mouseListeners) l.mouseExited(mouse);
+                    break;
+                case MouseEvent.MOUSE_MOVED:
+                    for (MouseMotionListener l : mouseMotionListeners) l.mouseMoved(mouse);
+                    break;
+                case MouseEvent.MOUSE_DRAGGED:
+                    for (MouseMotionListener l : mouseMotionListeners) l.mouseDragged(mouse);
+                    break;
+                default:
+                    break;
+            }
+        } else if (event instanceof KeyEvent key) {
+            switch (key.getID()) {
+                case KeyEvent.KEY_PRESSED:
+                    for (KeyListener l : keyListeners) l.keyPressed(key);
+                    break;
+                case KeyEvent.KEY_RELEASED:
+                    for (KeyListener l : keyListeners) l.keyReleased(key);
+                    break;
+                case KeyEvent.KEY_TYPED:
+                    for (KeyListener l : keyListeners) l.keyTyped(key);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
 
     public Object getTreeLock() { return this; }
 
