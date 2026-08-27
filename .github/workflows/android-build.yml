@@ -75,7 +75,10 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: single-rs-2012-debug-apk${{ inputs.with-cache && '' || '-no-cache' }}
+          # Both branches non-empty, for the same reason as the build flag: an
+          # empty string is falsy, so `cond && '' || 'x'` is always 'x'. This
+          # named a cache-bundled APK "-no-cache" once already.
+          name: single-rs-2012-debug-apk${{ inputs.with-cache && '-with-cache' || '-no-cache' }}
           path: android/app/build/outputs/apk/debug/*.apk
           # The cache inside is stored, not deflated, so re-compressing the
           # artifact burns minutes for nothing.
