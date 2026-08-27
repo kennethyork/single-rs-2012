@@ -310,6 +310,10 @@ tasks.register('downgradeDarkanCore') {
                 // src/main/java/com/rs/lib/util/MapXTEAs.java, which resolves the
                 // path through Settings instead.
                 'com/rs/lib/util/MapXTEAs',
+                // Calls Class.isRecord() and java.lang.reflect.RecordComponent,
+                // both API 33+. Replaced by
+                // src/main/java/com/rs/lib/util/RecordTypeAdapterFactory.java.
+                'com/rs/lib/util/RecordTypeAdapterFactory',
         ])
     }
 }
