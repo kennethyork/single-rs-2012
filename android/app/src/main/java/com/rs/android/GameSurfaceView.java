@@ -8,13 +8,16 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.text.InputType;
+import android.graphics.Rect;
 import android.util.AttributeSet;
+import android.view.ViewTreeObserver;
 import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
@@ -40,6 +43,19 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
     private boolean touchLogged;
     private boolean keyboardVisible;
     private boolean cameraDragging;
+    /**
+     * Height the soft keyboard is covering.
+     *
+     * The frame is scaled into the space above it and touches are mapped
+     * against the same reduced area, so raising the keyboard shrinks the game
+     * rather than hiding the bottom of it behind the keys.
+     */
+    private int keyboardHeight;
+    private final Rect visibleFrame = new Rect();
+    private boolean pinchActive;
+    private boolean longPressActive;
+    private boolean twoFingerDragging;
+    private float twoFingerLastX;
     /** Pinch scale since the last emitted wheel notch. */
     private float pinchAccumulator = 1f;
     /** How far a pinch must travel to count as one wheel notch. */
@@ -65,6 +81,20 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
         setFocusable(true);
         setFocusableInTouchMode(true);
         requestFocus();
+
+        // Android gives no callback for keyboard height; infer it by comparing
+        // the window's visible frame to the root view.
+        getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                View root = getRootView();
+                root.getWindowVisibleDisplayFrame(visibleFrame);
+                int covered = root.getHeight() - visibleFrame.height();
+                // Below 15% of the screen it is a status bar or gesture inset,
+                // not a keyboard.
+                keyboardHeight = covered > root.getHeight() * 0.15 ? covered : 0;
+            }
+        });
         paint.setFilterBitmap(false);
         paint.setAntiAlias(false);
         statusPaint.setColor(Color.WHITE);
@@ -88,10 +118,11 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
             public void onLongPress(MotionEvent e) {
                 int[] g = screenToGame(e.getX(), e.getY());
                 if (g == null) return;
+                longPressActive = true;
                 gameMouseX = g[0];
                 gameMouseY = g[1];
                 mouseButtonDown = 2;
-                postDelayed(() -> mouseButtonDown = 0, 100);
+                postDelayed(() -> { mouseButtonDown = 0; longPressActive = false; }, 100);
                 // Long press is the game's right click, for context menus.
                 tapClient(g[0], g[1], java.awt.event.MouseEvent.BUTTON3);
             }
@@ -122,7 +153,13 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
             public boolean onScaleBegin(ScaleGestureDetector detector) {
                 zoomAtStart = cameraZoomOffset;
                 pinchAccumulator = 1f;
+                pinchActive = true;
                 return true;
+            }
+
+            @Override
+            public void onScaleEnd(ScaleGestureDetector detector) {
+                pinchActive = false;
             }
 
             @Override
@@ -384,13 +421,14 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
             if (canvas != null) {
                 canvas.drawColor(Color.BLACK);
                 srcRect.set(0, 0, width, height);
-                float scaleX = (float) canvas.getWidth() / width;
-                float scaleY = (float) canvas.getHeight() / height;
-                float scale = Math.min(scaleX, scaleY);
+                int availW = canvas.getWidth();
+                int availH = canvas.getHeight() - keyboardHeight;
+                if (availH < 100) availH = canvas.getHeight();
+                float scale = Math.min((float) availW / width, (float) availH / height);
                 int dw = (int) (width * scale);
                 int dh = (int) (height * scale);
-                int dx = (canvas.getWidth() - dw) / 2;
-                int dy = (canvas.getHeight() - dh) / 2;
+                int dx = (availW - dw) / 2;
+                int dy = (availH - dh) / 2;
                 dstRect.set(dx, dy, dx + dw, dy + dh);
                 canvas.drawBitmap(frameBitmap, srcRect, dstRect, paint);
             }
@@ -421,12 +459,12 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
     }
 
     private int[] screenToGame(float sx, float sy) {
-        int w = getWidth(), h = getHeight();
+        int w = getWidth();
+        int h = getHeight() - keyboardHeight;
+        if (h < 100) h = getHeight();
         int gw = frameWidth > 0 ? frameWidth : 800;
         int gh = frameHeight > 0 ? frameHeight : 600;
-        float scaleX = (float) w / gw;
-        float scaleY = (float) h / gh;
-        float scale = Math.min(scaleX, scaleY);
+        float scale = Math.min((float) w / gw, (float) h / gh);
         int dw = (int) (gw * scale), dh = (int) (gh * scale);
         int dx = (w - dw) / 2, dy = (h - dh) / 2;
         int gx = (int) ((sx - dx) / scale);
@@ -471,41 +509,65 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        scaleDetector.onTouchEvent(event);
+        int action = event.getActionMasked();
+        int pointers = event.getPointerCount();
+
+        // A two-finger horizontal drag rotates the camera. Tracked here rather
+        // than in the gesture detector so it can suppress the tap handlers,
+        // which would otherwise fire a click in the middle of a rotation.
+        if (pointers == 2 && action == MotionEvent.ACTION_MOVE) {
+            float midX = (event.getX(0) + event.getX(1)) / 2f;
+            if (!twoFingerDragging) {
+                twoFingerDragging = true;
+                twoFingerLastX = midX;
+                beginCameraDrag(event);
+            } else {
+                int[] g = screenToGame(centroidX(event), centroidY(event));
+                if (g != null) {
+                    gameMouseX = g[0];
+                    gameMouseY = g[1];
+                    cameraRotationDelta += (int) ((midX - twoFingerLastX) / 4f);
+                    twoFingerLastX = midX;
+                    dispatchToClient(java.awt.event.MouseEvent.MOUSE_DRAGGED, g[0], g[1],
+                            java.awt.event.MouseEvent.BUTTON2);
+                }
+            }
+        }
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL
+                || (action == MotionEvent.ACTION_POINTER_UP && pointers <= 2)) {
+            twoFingerDragging = false;
+            endCameraDrag();
+        }
+
+        // Only let taps and scrolls through when no multi-finger gesture is live.
+        if (!pinchActive && !twoFingerDragging) {
+            gestureDetector.onTouchEvent(event);
+        }
+
         if (!touchLogged) {
             touchLogged = true;
             android.util.Log.i(AndroidLoader.TAG, "input: first touch raw=" + event.getX() + ","
                     + event.getY() + " view=" + getWidth() + "x" + getHeight()
                     + " frame=" + frameWidth + "x" + frameHeight);
         }
-        scaleDetector.onTouchEvent(event);
-        gestureDetector.onTouchEvent(event);
-        switch (event.getActionMasked()) {
-            case MotionEvent.ACTION_POINTER_DOWN:
-                if (event.getPointerCount() == 2) beginCameraDrag(event);
-                break;
+        switch (action) {
             case MotionEvent.ACTION_MOVE:
-                boolean twoFinger = cameraDragging && event.getPointerCount() >= 2;
-                int[] c = twoFinger
-                        ? screenToGame(centroidX(event), centroidY(event))
-                        : screenToGame(event.getX(), event.getY());
-                if (c != null) {
-                    gameMouseX = c[0];
-                    gameMouseY = c[1];
-                    dispatchToClient(twoFinger
-                                    ? java.awt.event.MouseEvent.MOUSE_DRAGGED
-                                    : java.awt.event.MouseEvent.MOUSE_MOVED,
-                            c[0], c[1],
-                            twoFinger ? java.awt.event.MouseEvent.BUTTON2
-                                    : java.awt.event.MouseEvent.NOBUTTON);
+                if (!longPressActive && !pinchActive && !twoFingerDragging && pointers == 1) {
+                    int[] c = screenToGame(event.getX(), event.getY());
+                    if (c != null) {
+                        gameMouseX = c[0];
+                        gameMouseY = c[1];
+                        dispatchToClient(java.awt.event.MouseEvent.MOUSE_MOVED, c[0], c[1],
+                                java.awt.event.MouseEvent.NOBUTTON);
+                    }
                 }
                 break;
-            case MotionEvent.ACTION_POINTER_UP:
-                if (event.getPointerCount() <= 2) endCameraDrag();
-                break;
             case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_CANCEL:
-                endCameraDrag();
                 mouseButtonDown = 0;
+                longPressActive = false;
+                break;
+            default:
                 break;
         }
         return true;
