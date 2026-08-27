@@ -16,6 +16,7 @@
 //
 package com.rs.engine.quest;
 
+import com.rs.utils.ClassScanner;
 import com.rs.Settings;
 import com.rs.cache.loaders.EnumDefinitions;
 import com.rs.cache.loaders.StructDefinitions;
@@ -243,7 +244,7 @@ public enum Quest {
 
 	public static void initializeHandlers() {
 		try {
-			List<Class<?>> classes = Utils.getClassesWithAnnotation("com.rs", QuestHandler.class);
+			List<Class<?>> classes = ClassScanner.getClassesWithAnnotation("com.rs", QuestHandler.class);
 			for (Class<?> clazz : classes) {
 				QuestHandler handler = clazz.getAnnotation(QuestHandler.class);
 				if (handler == null || clazz.getSuperclass() != QuestOutline.class)

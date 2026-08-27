@@ -324,6 +324,24 @@ tasks.register('downgradeDarkanCore') {
                 ['java/util/concurrent/Executors',
                  'newVirtualThreadPerTaskExecutor()Ljava/util/concurrent/ExecutorService;',
                  'com/rs/android/AndroidExecutors'],
+                // Utils scans the classpath with ClassGraph, which reads .class
+                // files from jars and directories. An Android app has neither --
+                // everything is in classes*.dex inside the APK -- so GameDecoder
+                // would find no packet decoders at all. Our sources call these
+                // through com.rs.utils.ClassScanner instead; this covers the
+                // core jar's own call sites.
+                ['com/rs/lib/util/Utils',
+                 'getClassesWithAnnotation(Ljava/lang/String;Ljava/lang/Class;)Ljava/util/List;',
+                 'com/rs/android/AndroidClassScanner'],
+                ['com/rs/lib/util/Utils',
+                 'getClasses(Ljava/lang/String;)Ljava/util/List;',
+                 'com/rs/android/AndroidClassScanner'],
+                ['com/rs/lib/util/Utils',
+                 'getSubClasses(Ljava/lang/String;Ljava/lang/Class;)Ljava/util/List;',
+                 'com/rs/android/AndroidClassScanner'],
+                ['com/rs/lib/util/Utils',
+                 'getMethodsWithAnnotation(Ljava/lang/String;Ljava/lang/Class;)Ljava/util/List;',
+                 'com/rs/android/AndroidClassScanner'],
         ])
     }
 }

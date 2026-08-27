@@ -16,6 +16,7 @@
 //
 package com.rs.engine.miniquest;
 
+import com.rs.utils.ClassScanner;
 import com.rs.engine.quest.Quest;
 import com.rs.game.model.entity.player.Player;
 import com.rs.game.model.entity.player.Skills;
@@ -45,7 +46,7 @@ public enum Miniquest {
 
 	public static void initializeHandlers() {
 		try {
-			List<Class<?>> classes = Utils.getClassesWithAnnotation("com.rs", MiniquestHandler.class);
+			List<Class<?>> classes = ClassScanner.getClassesWithAnnotation("com.rs", MiniquestHandler.class);
 			for (Class<?> clazz : classes) {
 				MiniquestHandler handler = clazz.getAnnotation(MiniquestHandler.class);
 				if (handler == null || clazz.getSuperclass() != MiniquestOutline.class)

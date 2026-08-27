@@ -16,6 +16,7 @@
 //
 package com.rs.plugin;
 
+import com.rs.utils.ClassScanner;
 import com.rs.game.model.entity.player.Player;
 import com.rs.lib.util.Logger;
 import com.rs.lib.util.Utils;
@@ -47,7 +48,7 @@ public class PluginManager {
 			long start = System.currentTimeMillis();
 			Logger.info(PluginManager.class, "loadPlugins", "Loading plugins...");
 			List<Class<?>> eventTypes = Utils.getClasses("com.rs.plugin.events");
-			List<Class<?>> classes = Utils.getClassesWithAnnotation("com.rs", PluginEventHandler.class);
+			List<Class<?>> classes = ClassScanner.getClassesWithAnnotation("com.rs", PluginEventHandler.class);
 			Set<Field> visitedFields = new HashSet<>();
 			Logger.info(PluginManager.class, "loadPlugins", "Loading " + eventTypes.size() + " event types and " + classes.size() + " plugin enabled classes.");
 			int handlers = 0;
