@@ -31,6 +31,8 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
     private final Rect srcRect = new Rect();
     private final Rect dstRect = new Rect();
 
+    private boolean touchLogged;
+
     private final GestureDetector gestureDetector;
     private final ScaleGestureDetector scaleDetector;
 
@@ -177,6 +179,12 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (!touchLogged) {
+            touchLogged = true;
+            android.util.Log.i(AndroidLoader.TAG, "input: first touch raw=" + event.getX() + ","
+                    + event.getY() + " view=" + getWidth() + "x" + getHeight()
+                    + " frame=" + frameWidth + "x" + frameHeight);
+        }
         scaleDetector.onTouchEvent(event);
         gestureDetector.onTouchEvent(event);
         switch (event.getActionMasked()) {

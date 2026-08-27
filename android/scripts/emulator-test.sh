@@ -76,6 +76,16 @@ if grep -qF "first frame presented" "$LOG_DIR/logcat-full.txt" 2>/dev/null; then
         size=$( [ -f "$LOG_DIR/screen-$shot.png" ] && wc -c < "$LOG_DIR/screen-$shot.png" || echo 0 )
         echo "  screen-$shot.png: $size bytes"
 
+        # The client's first-run screen wants a tap on "Auto Setup" before it
+        # will show a login box. The activity renders landscape 640x320 while
+        # the display is portrait 320x640, so which space input tap uses is not
+        # obvious -- try each candidate on a separate pass and let the
+        # screenshots and the logged touch coordinates say which one lands.
+        case "$shot" in
+            1) echo "  tap A (landscape space)"; adb shell input tap 315 176 || true ;;
+            2) echo "  tap B (portrait, rotated cw)"; adb shell input tap 176 325 || true ;;
+            3) echo "  tap C (portrait, rotated ccw)"; adb shell input tap 144 315 || true ;;
+        esac
     done
 fi
 
