@@ -69,11 +69,24 @@ done
 # than screenshotting the first thing drawn and calling it rendered.
 if grep -qF "first frame presented" "$LOG_DIR/logcat-full.txt" 2>/dev/null; then
     echo "==> Client is drawing; watching it settle"
+    adb shell wm size || true
     for shot in 1 2 3 4; do
         sleep "${SETTLE_INTERVAL:-30}"
         adb exec-out screencap -p > "$LOG_DIR/screen-$shot.png" 2>/dev/null || true
         size=$( [ -f "$LOG_DIR/screen-$shot.png" ] && wc -c < "$LOG_DIR/screen-$shot.png" || echo 0 )
         echo "  screen-$shot.png: $size bytes"
+
+        # The client puts an "Unsupported Java Warning" over the login box.
+        # Dismiss it on the second pass so the run shows whatever is behind it,
+        # whether or not the java.version fix removed it in the first place.
+        if [ "$shot" = "2" ]; then
+            read -r width height <<<"$(adb shell wm size | sed 's/.*: //; s/x/ /')"
+            width=${width:-640}; height=${height:-320}
+            tap_x=$(( width * 617 / 1000 ))
+            tap_y=$(( height * 628 / 1000 ))
+            echo "  tapping the dialog's right button at ${tap_x},${tap_y} (screen ${width}x${height})"
+            adb shell input tap "$tap_x" "$tap_y" || true
+        fi
     done
 fi
 

@@ -111,6 +111,8 @@ public final class AndroidLoader {
         Log.i(TAG, "boot: starting client engine");
         showStatus("Starting the client\u2026");
         loader.setSize(GAME_WIDTH, GAME_HEIGHT);
+        Log.i(TAG, "client: java.version=" + System.getProperty("java.version")
+                + " os.name=" + System.getProperty("os.name"));
         client clnt = new client();
         clnt.supplyApplet(loader);
         clnt.init();
