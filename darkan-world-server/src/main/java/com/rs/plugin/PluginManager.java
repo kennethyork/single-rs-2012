@@ -47,13 +47,13 @@ public class PluginManager {
 		try {
 			long start = System.currentTimeMillis();
 			Logger.info(PluginManager.class, "loadPlugins", "Loading plugins...");
-			List<Class<?>> eventTypes = Utils.getClasses("com.rs.plugin.events");
+			List<Class<?>> eventTypes = ClassScanner.getClasses("com.rs.plugin.events");
 			List<Class<?>> classes = ClassScanner.getClassesWithAnnotation("com.rs", PluginEventHandler.class);
 			Set<Field> visitedFields = new HashSet<>();
 			Logger.info(PluginManager.class, "loadPlugins", "Loading " + eventTypes.size() + " event types and " + classes.size() + " plugin enabled classes.");
 			int handlers = 0;
 
-			List<Method> startupMethods = Utils.getMethodsWithAnnotation("com.rs", ServerStartupEvent.class);
+			List<Method> startupMethods = ClassScanner.getMethodsWithAnnotation("com.rs", ServerStartupEvent.class);
 			Set<Method> visitedMethods = new HashSet<>();
 			for (Method method : startupMethods) {
 				if (visitedMethods.contains(method))

@@ -16,6 +16,7 @@
 //
 package com.rs.utils.json;
 
+import com.rs.utils.ClassScanner;
 import com.google.gson.*;
 import com.rs.game.model.entity.player.Controller;
 import com.rs.lib.util.Logger;
@@ -38,7 +39,7 @@ public class ControllerAdapter implements JsonSerializer<Controller>, JsonDeseri
 	@ServerStartupEvent(Priority.FILE_IO)
 	public static void init() {
 		try {
-			List<Class<?>> classes = Utils.getSubClasses("com.rs", Controller.class);
+			List<Class<?>> classes = ClassScanner.getSubClasses("com.rs", Controller.class);
 			for (Class<?> clazz : classes) {
 				if (CONTROLLER_CLASSES.put(clazz.getSimpleName(), clazz) != null)
 					Logger.error(ControllerAdapter.class, "init", "Duplicate controller class: " + clazz.getName());

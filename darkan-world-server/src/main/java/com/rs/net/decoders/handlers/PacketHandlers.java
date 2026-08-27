@@ -16,6 +16,7 @@
 //
 package com.rs.net.decoders.handlers;
 
+import com.rs.utils.ClassScanner;
 import com.rs.lib.net.ClientPacket;
 import com.rs.lib.net.packets.Packet;
 import com.rs.lib.net.packets.PacketDecoder;
@@ -44,7 +45,7 @@ public class PacketHandlers {
 	public static void loadHandlersFromPackage(String pack) {
 		try {
 			Logger.info(PacketHandlers.class, "loadHandlersFromPackage", "Initializing packet handlers ("+pack+")...");
-			List<Class<?>> classes = Utils.getClasses(pack);
+			List<Class<?>> classes = ClassScanner.getClasses(pack);
 
 			for (Class<?> clazz : classes)
 				mapHandler((PacketHandler<?, ? extends Packet>) clazz.getConstructor().newInstance());

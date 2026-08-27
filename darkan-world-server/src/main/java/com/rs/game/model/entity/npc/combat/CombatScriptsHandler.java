@@ -16,6 +16,7 @@
 //
 package com.rs.game.model.entity.npc.combat;
 
+import com.rs.utils.ClassScanner;
 import com.rs.game.World;
 import com.rs.game.content.combat.CombatStyle;
 import com.rs.game.model.WorldProjectile;
@@ -63,7 +64,7 @@ public class CombatScriptsHandler {
 	public static void loadScripts() {
 		List<Class<?>> classes;
 		try {
-			classes = Utils.getSubClasses("com.rs", CombatScript.class);
+			classes = ClassScanner.getSubClasses("com.rs", CombatScript.class);
 			for (Class<?> c : classes) {
 				if (c.isAnonymousClass()) // next
 					continue;

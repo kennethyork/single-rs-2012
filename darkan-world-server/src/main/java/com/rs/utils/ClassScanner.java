@@ -39,21 +39,59 @@ public final class ClassScanner {
 
     private ClassScanner() {}
 
-    @SuppressWarnings("unchecked")
     public static List<Class<?>> getClassesWithAnnotation(String packagePrefix,
                                                           Class<? extends Annotation> annotation)
             throws ClassNotFoundException, IOException {
-        if (!Boolean.getBoolean("darkan.android"))
+        if (!onAndroid())
             return Utils.getClassesWithAnnotation(packagePrefix, annotation);
+        return invoke("getClassesWithAnnotation",
+                new Class<?>[] { String.class, Class.class }, packagePrefix, annotation);
+    }
+
+    public static List<Class<?>> getClasses(String packagePrefix)
+            throws ClassNotFoundException, IOException {
+        if (!onAndroid())
+            return Utils.getClasses(packagePrefix);
+        return invoke("getClasses", new Class<?>[] { String.class }, packagePrefix);
+    }
+
+    public static List<Class<?>> getSubClasses(String packagePrefix, Class<?> superType)
+            throws ClassNotFoundException, IOException {
+        if (!onAndroid())
+            return Utils.getSubClasses(packagePrefix, superType);
+        return invoke("getSubClasses",
+                new Class<?>[] { String.class, Class.class }, packagePrefix, superType);
+    }
+
+    public static List<Method> getMethodsWithAnnotation(String packagePrefix,
+                                                        Class<? extends Annotation> annotation) {
+        if (!onAndroid())
+            return Utils.getMethodsWithAnnotation(packagePrefix, annotation);
         try {
-            Method method = Class.forName(ANDROID_SCANNER)
-                    .getMethod("getClassesWithAnnotation", String.class, Class.class);
-            return (List<Class<?>>) method.invoke(null, packagePrefix, annotation);
+            return invoke("getMethodsWithAnnotation",
+                    new Class<?>[] { String.class, Class.class }, packagePrefix, annotation);
+        } catch (ClassNotFoundException | IOException e) {
+            // The Android scanner does not declare these on this method.
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static boolean onAndroid() {
+        return Boolean.getBoolean("darkan.android");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> List<T> invoke(String name, Class<?>[] signature, Object... args)
+            throws ClassNotFoundException, IOException {
+        try {
+            Method method = Class.forName(ANDROID_SCANNER).getMethod(name, signature);
+            return (List<T>) method.invoke(null, args);
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
             if (cause instanceof ClassNotFoundException notFound) throw notFound;
             if (cause instanceof IOException io) throw io;
             if (cause instanceof RuntimeException runtime) throw runtime;
+            if (cause instanceof Error error) throw error;
             throw new IllegalStateException(cause);
         } catch (ReflectiveOperationException e) {
             throw new IllegalStateException("The Android class scanner is unavailable.", e);
