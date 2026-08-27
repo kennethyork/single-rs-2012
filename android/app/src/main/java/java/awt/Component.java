@@ -4,6 +4,7 @@ import java.awt.event.FocusListener;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -135,7 +136,10 @@ public class Component implements java.io.Serializable, ImageObserver {
      * its own root, not an AWTEvent subclass.
      */
     public void dispatchInputEvent(InputEvent event) {
-        if (event instanceof MouseEvent mouse) {
+        if (event instanceof MouseWheelEvent wheel) {
+            // Checked before MouseEvent: MouseWheelEvent is a subclass of it.
+            for (MouseWheelListener l : mouseWheelListeners) l.mouseWheelMoved(wheel);
+        } else if (event instanceof MouseEvent mouse) {
             switch (mouse.getID()) {
                 case MouseEvent.MOUSE_PRESSED:
                     for (MouseListener l : mouseListeners) l.mousePressed(mouse);

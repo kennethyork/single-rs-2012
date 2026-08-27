@@ -39,6 +39,11 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
 
     private boolean touchLogged;
     private boolean keyboardVisible;
+    private boolean cameraDragging;
+    /** Pinch scale since the last emitted wheel notch. */
+    private float pinchAccumulator = 1f;
+    /** How far a pinch must travel to count as one wheel notch. */
+    private static final float PINCH_NOTCH = 1.15f;
 
     private final GestureDetector gestureDetector;
     private final ScaleGestureDetector scaleDetector;
@@ -114,6 +119,7 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
             @Override
             public boolean onScaleBegin(ScaleGestureDetector detector) {
                 zoomAtStart = cameraZoomOffset;
+                pinchAccumulator = 1f;
                 return true;
             }
 
@@ -121,6 +127,17 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
             public boolean onScale(ScaleGestureDetector detector) {
                 float total = detector.getScaleFactor();
                 cameraZoomOffset = Math.max(-250, Math.min(350, zoomAtStart + (1.0f - total) * 300));
+                // Turn the continuous pinch into discrete wheel notches, which
+                // is all the client understands.
+                pinchAccumulator *= total;
+                while (pinchAccumulator >= PINCH_NOTCH) {
+                    pinchAccumulator /= PINCH_NOTCH;
+                    dispatchWheelToClient(gameMouseX, gameMouseY, -1);   // spread fingers = zoom in
+                }
+                while (pinchAccumulator <= 1f / PINCH_NOTCH) {
+                    pinchAccumulator *= PINCH_NOTCH;
+                    dispatchWheelToClient(gameMouseX, gameMouseY, 1);
+                }
                 return true;
             }
         });
@@ -140,6 +157,20 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
                 canvas, id, System.currentTimeMillis(), 0, gameX, gameY,
                 id == java.awt.event.MouseEvent.MOUSE_CLICKED ? 1 : 0,
                 button == java.awt.event.MouseEvent.BUTTON3, button));
+    }
+
+    /**
+     * Sends a mouse wheel notch. The client zooms the camera on wheel movement
+     * over the world, and scrolls whatever interface is under the pointer
+     * otherwise, so a pinch drives both without having to know which is which.
+     */
+    private void dispatchWheelToClient(int gameX, int gameY, int notches) {
+        java.awt.Canvas canvas = com.rs.jagex.Class351.gameCanvas;
+        if (canvas == null || notches == 0) return;
+        canvas.dispatchInputEvent(new java.awt.event.MouseWheelEvent(
+                canvas, java.awt.event.MouseEvent.MOUSE_WHEEL, System.currentTimeMillis(), 0,
+                gameX, gameY, 0, false,
+                java.awt.event.MouseWheelEvent.WHEEL_UNIT_SCROLL, 1, notches));
     }
 
     /** A tap: move there, press, release, click -- the sequence AWT would send. */
@@ -323,6 +354,40 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
         return new int[]{gx, gy};
     }
 
+    /**
+     * Two-finger drag rotates the camera.
+     *
+     * The client rotates while the middle mouse button is held and the pointer
+     * moves (Class209_Sub1.middleButtonDown), so the gesture is delivered as a
+     * middle-button drag rather than anything Android-specific.
+     */
+    private void beginCameraDrag(MotionEvent event) {
+        int[] g = screenToGame(centroidX(event), centroidY(event));
+        if (g == null) return;
+        cameraDragging = true;
+        dispatchToClient(java.awt.event.MouseEvent.MOUSE_PRESSED, g[0], g[1],
+                java.awt.event.MouseEvent.BUTTON2);
+    }
+
+    private void endCameraDrag() {
+        if (!cameraDragging) return;
+        cameraDragging = false;
+        dispatchToClient(java.awt.event.MouseEvent.MOUSE_RELEASED, gameMouseX, gameMouseY,
+                java.awt.event.MouseEvent.BUTTON2);
+    }
+
+    private static float centroidX(MotionEvent event) {
+        float sum = 0;
+        for (int i = 0; i < event.getPointerCount(); i++) sum += event.getX(i);
+        return sum / event.getPointerCount();
+    }
+
+    private static float centroidY(MotionEvent event) {
+        float sum = 0;
+        for (int i = 0; i < event.getPointerCount(); i++) sum += event.getY(i);
+        return sum / event.getPointerCount();
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (!touchLogged) {
@@ -334,16 +399,31 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
         scaleDetector.onTouchEvent(event);
         gestureDetector.onTouchEvent(event);
         switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_POINTER_DOWN:
+                if (event.getPointerCount() == 2) beginCameraDrag(event);
+                break;
             case MotionEvent.ACTION_MOVE:
-                int[] c = screenToGame(event.getX(), event.getY());
+                boolean twoFinger = cameraDragging && event.getPointerCount() >= 2;
+                int[] c = twoFinger
+                        ? screenToGame(centroidX(event), centroidY(event))
+                        : screenToGame(event.getX(), event.getY());
                 if (c != null) {
                     gameMouseX = c[0];
                     gameMouseY = c[1];
-                    dispatchToClient(java.awt.event.MouseEvent.MOUSE_MOVED, c[0], c[1],
-                            java.awt.event.MouseEvent.NOBUTTON);
+                    dispatchToClient(twoFinger
+                                    ? java.awt.event.MouseEvent.MOUSE_DRAGGED
+                                    : java.awt.event.MouseEvent.MOUSE_MOVED,
+                            c[0], c[1],
+                            twoFinger ? java.awt.event.MouseEvent.BUTTON2
+                                    : java.awt.event.MouseEvent.NOBUTTON);
                 }
                 break;
+            case MotionEvent.ACTION_POINTER_UP:
+                if (event.getPointerCount() <= 2) endCameraDrag();
+                break;
             case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                endCameraDrag();
                 mouseButtonDown = 0;
                 break;
         }
