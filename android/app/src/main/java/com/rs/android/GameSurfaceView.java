@@ -98,6 +98,8 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
 
             @Override
             public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy) {
+                // A drag scrolls whatever list is under it, as the wheel would.
+                dispatchWheelToClient(gameMouseX, gameMouseY, dy > 0 ? 1 : -1);
                 return true;
             }
 
@@ -183,17 +185,94 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
     }
 
     /**
-     * Declares this view as a text target with no input type of its own.
+     * Declares this view as a text target and intercepts what the IME produces.
      *
-     * TYPE_NULL makes soft keyboards fall back to sending raw key events rather
-     * than editing a text buffer, which is what the client wants: it has its own
-     * login and chat fields and takes characters through AWT keyTyped.
+     * TYPE_NULL, which makes a keyboard fall back to raw key events, is not
+     * enough: modern soft keyboards commit text through commitText and
+     * deleteSurroundingText and never send a KeyEvent at all. Relying on key
+     * events works for a hardware keyboard and for `adb shell input text`, which
+     * is why it passed on the emulator and would still have done nothing on a
+     * phone. Same approach as Single-RSC Mobile.
+     *
+     * VISIBLE_PASSWORD with NO_SUGGESTIONS keeps the IME from autocorrecting or
+     * composing over what is typed, since the client owns the text, not Android.
      */
     @Override
     public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
-        outAttrs.inputType = InputType.TYPE_NULL;
-        outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_FLAG_NO_FULLSCREEN;
-        return new BaseInputConnection(this, false);
+        outAttrs.inputType = InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD;
+        outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_EXTRACT_UI
+                | EditorInfo.IME_FLAG_NO_FULLSCREEN
+                | EditorInfo.IME_ACTION_DONE;
+        return new GameInputConnection(this);
+    }
+
+    /** Routes everything an IME can produce into the client's key handling. */
+    private class GameInputConnection extends BaseInputConnection {
+        GameInputConnection(android.view.View target) {
+            super(target, false);
+        }
+
+        @Override
+        public boolean commitText(CharSequence text, int newCursorPosition) {
+            if (text != null)
+                for (int i = 0; i < text.length(); i++) typeChar(text.charAt(i));
+            return true;
+        }
+
+        @Override
+        public boolean setComposingText(CharSequence text, int newCursorPosition) {
+            // The client has no notion of composing text; treat it as committed.
+            return commitText(text, newCursorPosition);
+        }
+
+        @Override
+        public boolean deleteSurroundingText(int beforeLength, int afterLength) {
+            for (int i = 0; i < beforeLength; i++)
+                typeKey(java.awt.event.KeyEvent.VK_BACK_SPACE, '\b');
+            return true;
+        }
+
+        @Override
+        public boolean sendKeyEvent(KeyEvent event) {
+            // Some keyboards do still send key events.
+            if (event.getAction() == KeyEvent.ACTION_DOWN)
+                return onKeyDown(event.getKeyCode(), event);
+            if (event.getAction() == KeyEvent.ACTION_UP)
+                return onKeyUp(event.getKeyCode(), event);
+            return super.sendKeyEvent(event);
+        }
+
+        @Override
+        public boolean performEditorAction(int actionCode) {
+            typeKey(java.awt.event.KeyEvent.VK_ENTER, '\n');   // the IME's Done key
+            return true;
+        }
+    }
+
+    /** A printable character: the client reads these through AWT keyTyped. */
+    private void typeChar(char c) {
+        java.awt.Canvas canvas = com.rs.jagex.Class351.gameCanvas;
+        if (canvas == null || c == 0) return;
+        canvas.dispatchInputEvent(new java.awt.event.KeyEvent(
+                canvas, java.awt.event.KeyEvent.KEY_TYPED, System.currentTimeMillis(), 0,
+                0, c, 0));
+    }
+
+    /** A named key: pressed, typed, released, as AWT would deliver it. */
+    private void typeKey(int awtKeyCode, char keyChar) {
+        java.awt.Canvas canvas = com.rs.jagex.Class351.gameCanvas;
+        if (canvas == null) return;
+        long now = System.currentTimeMillis();
+        canvas.dispatchInputEvent(new java.awt.event.KeyEvent(
+                canvas, java.awt.event.KeyEvent.KEY_PRESSED, now, 0, awtKeyCode,
+                (char) java.awt.event.KeyEvent.CHAR_UNDEFINED, 0));
+        canvas.dispatchInputEvent(new java.awt.event.KeyEvent(
+                canvas, java.awt.event.KeyEvent.KEY_TYPED, now, 0, 0, keyChar, 0));
+        canvas.dispatchInputEvent(new java.awt.event.KeyEvent(
+                canvas, java.awt.event.KeyEvent.KEY_RELEASED, now, 0, awtKeyCode,
+                (char) java.awt.event.KeyEvent.CHAR_UNDEFINED, 0));
     }
 
     @Override
@@ -206,7 +285,9 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
         requestFocus();
         InputMethodManager imm = (InputMethodManager) getContext()
                 .getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
-        if (imm != null) imm.showSoftInput(this, InputMethodManager.SHOW_IMPLICIT);
+        // SHOW_FORCED rather than SHOW_IMPLICIT: nothing Android recognises as a
+        // text field is focused, and implicit requests are often ignored.
+        if (imm != null) imm.showSoftInput(this, InputMethodManager.SHOW_FORCED);
     }
 
     /** Hides the soft keyboard. */
