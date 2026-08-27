@@ -4,13 +4,16 @@ This directory is the Android client build of **Single RS 2012**. It wraps the
 `darkan-client` (2012-era RuneScape client) with an AWT compatibility shim and
 an Android renderer so the game can run on phones and tablets.
 
-> **Status: client *and* world server compile and package.** The Gradle
-> project, the `java.awt` shim, the Android host (Activity + SurfaceView), the
-> **full 2012 client source tree**, and the **full world-server source tree**
-> (1400+ Kotlin classes, ~1500 Java files) all build into one APK. The software
-> renderer is wired to the surface via `Class158_Sub2_Sub3_Sub1` →
-> `AndroidLoader.presentFrame`, and the 2012 game cache ships inside the APK.
-> What remains is device testing — see [Remaining work](#remaining-work).
+> **Status: boots to the login screen on an Android emulator.** The client and
+> the full world server build into one APK; the server starts in-process, listens
+> on 127.0.0.1:43595, and the client connects to it, renders through the software
+> renderer, and reaches its login prompt. Verified end to end by the
+> [emulator test](#emulator-testing) on API 26, with screenshots.
+>
+> ![The client at its login screen on an Android emulator](../docs/images/android-login-screen.png)
+>
+> **Not yet done: logging in.** Keyboard input is not wired, so the username and
+> password fields cannot be typed into. Nothing has run on physical hardware.
 
 ## Layout
 
@@ -140,17 +143,60 @@ client's safe-mode `JavaRenderer`, which already blits to a
 `Class158_Sub2_Sub3_Sub1` pixel buffer) scaled to the screen, and translates
 touch into the game's mouse model.
 
+## Emulator testing
+
+`.github/workflows/android-emulator.yml` boots the APK on an emulator and reports
+which boot checkpoints it reaches, capturing logcat and screenshots as artifacts.
+It runs cache-less by default; add the `full-cache` label to a PR (or dispatch
+with `with-cache`) to pull the real cache from the latest release and test the
+whole thing.
+
+`android/tools/check-api-levels.py` resolves every platform method and field
+reference against the SDK's `api-versions.xml` -- the database Lint's `NewApi`
+check uses, which Lint does not apply to a prebuilt dependency's classes. It
+reads the APK's dex for what actually ships, or a jar to attribute findings to
+the calling class. Written after several rounds of one-`NoSuchMethodError`-per-
+emulator-run.
+
 ## Remaining work
 
-### Device testing
+### 1. Keyboard input
 
-Nothing has been run on a device or emulator yet — no emulator image is
-installed on this machine and `adb devices` is empty. The whole port is verified
-at build time only. The bundled cache is verified to be byte-identical to
-`darkan-cache/` through staging and packaging, but the extraction path itself
-has never executed.
+Touch is wired (`Component.dispatchInputEvent`), but key events are not, so the
+login form cannot be filled in. Needs Android key events translated to AWT
+`KeyEvent`s and a way to raise the soft keyboard.
 
-An ~860 MB APK needs ~1.7 GB free on the device to install and extract.
+### 2. Physical device testing
+
+Everything so far is an emulator, configured with a 1 GB heap. `largeHeap`
+typically yields 256-512 MB on a real phone, and the server hit an
+`OutOfMemoryError` in its startup hooks below that. Whether the app fits on real
+hardware is unknown; if it does not, the fix is server-side (fewer simulated
+players, smaller caches) rather than a build setting.
+
+### 3. Loose ends
+
+- `os.name` is `linux` and cannot be corrected (see below), so
+  `NativeLibraryLoader` tries to `dlopen` the desktop renderer libraries and
+  fails with `UnsatisfiedLinkError: libstdc++.so.6`. Caught and survivable;
+  probably costs sound.
+- Several `[SEVERE]` log lines with empty messages during startup
+  (`Settings.loadConfig`, `PacketHandlers`, `CharmDrop`) are unexplained.
+- Reaching the login screen does not prove `AndroidClassScanner` found the same
+  handler set ClassGraph would; a shortfall there would show up as missing game
+  behaviour, not an error.
+- `com.rs.cache.loaders.FontMetrics` uses `List.toArray(IntFunction)` (API 33).
+  Server-side, referenced only from `Utils`, and unreached so far.
+
+### A note on system properties
+
+Android's libcore wraps the core system properties in
+`PropertiesWithNonOverrideableDefaults`: `System.setProperty` for `java.version`,
+`os.name` and others is **silently dropped**, with only a log warning, so the call
+appears to succeed. `java.version` reads as `"0"`, which the client parsed as
+Java 0 and hid the login screen behind an "Unsupported Java Warning"; `Engine`
+reads a `darkan.java.version` override instead. `user.home` *is* changeable,
+which is why pointing the client's scratch cache at internal storage worked.
 
 ## Android-only stubs and exclusions
 
