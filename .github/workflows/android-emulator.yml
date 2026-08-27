@@ -18,6 +18,8 @@ on:
         required: false
         default: false
   pull_request:
+    # "labeled" so adding the full-cache label re-runs against the real cache.
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - "android/**"
       - "darkan-client/**"
