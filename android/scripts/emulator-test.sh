@@ -56,7 +56,7 @@ while [ $SECONDS -lt $deadline ]; do
         break
     fi
     # Terminal checkpoints: no point waiting out the clock after either.
-    if grep -qE "$TAG.*(render: first frame presented|activity: game thread died|world server did not start|never opened port)" \
+    if grep -qE "$TAG.*(activity: game thread died|world server did not start|never opened port)" \
         "$LOG_DIR/logcat-full.txt" 2>/dev/null; then
         echo "==> Reached a terminal checkpoint, stopping early."
         break
@@ -64,10 +64,23 @@ while [ $SECONDS -lt $deadline ]; do
     sleep 5
 done
 
+# The first frame is the loading screen; the client still has to finish loading
+# and reach a login screen. Watch it for a while and capture as it goes, rather
+# than screenshotting the first thing drawn and calling it rendered.
+if grep -qF "first frame presented" "$LOG_DIR/logcat-full.txt" 2>/dev/null; then
+    echo "==> Client is drawing; watching it settle"
+    for shot in 1 2 3 4; do
+        sleep "${SETTLE_INTERVAL:-30}"
+        adb exec-out screencap -p > "$LOG_DIR/screen-$shot.png" 2>/dev/null || true
+        size=$( [ -f "$LOG_DIR/screen-$shot.png" ] && wc -c < "$LOG_DIR/screen-$shot.png" || echo 0 )
+        echo "  screen-$shot.png: $size bytes"
+    done
+fi
+
 sleep 2
 kill $LOGCAT_PID 2>/dev/null || true
 
-echo "==> Capturing the screen"
+echo "==> Capturing the final screen"
 adb exec-out screencap -p > "$LOG_DIR/screen.png" 2>/dev/null || echo "  (screencap failed)"
 [ -s "$LOG_DIR/screen.png" ] && echo "  saved $(wc -c < "$LOG_DIR/screen.png") bytes"
 
