@@ -15,8 +15,22 @@ TAG=SingleRS
 LOG_DIR=android/build/emulator-logs
 # Cache extraction copies ~840 MB inside the emulator, which is slow.
 WATCH_SECONDS="${WATCH_SECONDS:-240}"
+# 1 when the APK is supposed to contain the game cache, so the run is expected
+# to reach the world server rather than stopping at the missing cache.
+EXPECT_FULL="${EXPECT_FULL:-0}"
 
 mkdir -p "$LOG_DIR"
+
+# Fail fast rather than spending fifteen minutes discovering the APK was built
+# without the cache -- exactly what a falsy empty string in the workflow's build
+# flag caused once already.
+if [ "$EXPECT_FULL" = "1" ]; then
+    if ! unzip -l "$APK" 'assets/cache/manifest.txt' >/dev/null 2>&1; then
+        echo "FAIL: EXPECT_FULL is set but the APK has no assets/cache/ -- it was built without the game cache."
+        exit 1
+    fi
+    echo "==> APK contains the bundled game cache"
+fi
 
 echo "==> Installing $(du -h "$APK" | cut -f1) APK"
 if ! adb install -r -g "$APK"; then
@@ -113,6 +127,11 @@ else
     # means ART rejected the shim, and the whole approach needs rethinking.
     if ! grep -qF "java.awt shim loaded" "$LOG_DIR/logcat-full.txt" 2>/dev/null; then
         echo "FAIL: the java.awt shim did not load -- ART would not accept the java.* classes."
+        status=1
+    fi
+    # With the cache bundled there is no legitimate reason to stop early.
+    if [ "$EXPECT_FULL" = "1" ] && [ "$reached" -lt ${#checkpoints[@]} ]; then
+        echo "FAIL: the cache is bundled, so all ${#checkpoints[@]} checkpoints were expected."
         status=1
     fi
 fi

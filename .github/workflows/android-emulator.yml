@@ -97,8 +97,10 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
+          # Both branches must be non-empty: an empty string is falsy in a
+          # GitHub expression, so `cond && '' || 'x'` always yields 'x'.
           ./gradlew :app:assembleDebug \
-            ${{ env.WITH_CACHE == 'true' && '' || '-Pdarkan.bundleCache=false' }}
+            ${{ env.WITH_CACHE == 'true' && '-Pdarkan.bundleCache=true' || '-Pdarkan.bundleCache=false' }}
           ls -la app/build/outputs/apk/debug/
 
       # Reclaim the several copies of the cache Gradle leaves behind (staged,
@@ -133,7 +135,10 @@ jobs:
             -no-snapshot -partition-size 6144
           disable-animations: true
           # Unpacking ~840 MB inside an emulator is slow; give it room.
-          script: WATCH_SECONDS=${{ env.WITH_CACHE == 'true' && '900' || '240' }} android/scripts/emulator-test.sh
+          script: >-
+            WATCH_SECONDS=${{ env.WITH_CACHE == 'true' && '900' || '240' }}
+            EXPECT_FULL=${{ env.WITH_CACHE == 'true' && '1' || '0' }}
+            android/scripts/emulator-test.sh
 
       - name: Upload logcat
         if: always()
