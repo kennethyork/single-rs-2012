@@ -23,6 +23,22 @@ import java.net.Socket;
 public final class AndroidLoader {
 
     /**
+     * Size the client renders at.
+     *
+     * Every frame the client reads Class371.getActiveContainer().getSize() and
+     * resizes to it. On desktop that container is the Loader panel, which the
+     * JFrame lays out to the size set in Loader.openFrame; on Android nothing
+     * lays anything out, so the shim reported 0x0 and the client rendered 1x1
+     * frames onto a black screen.
+     *
+     * Fixed rather than the surface's own size: this is a software renderer, and
+     * a modern phone's full resolution would be far more pixels than it can push.
+     * GameSurfaceView scales the result up to fit.
+     */
+    private static final int GAME_WIDTH = 774;
+    private static final int GAME_HEIGHT = 588;
+
+    /**
      * Boot checkpoints are logged under one tag. There is no debugger on a CI
      * emulator, so logcat is the only way to see how far the port got; the
      * emulator test in .github/workflows asserts on these lines.
@@ -87,6 +103,7 @@ public final class AndroidLoader {
         Loader.loadParams();
         Log.i(TAG, "boot: starting client engine");
         showStatus("Starting the client\u2026");
+        loader.setSize(GAME_WIDTH, GAME_HEIGHT);
         client clnt = new client();
         clnt.supplyApplet(loader);
         clnt.init();
