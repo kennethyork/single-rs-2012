@@ -280,7 +280,14 @@ public abstract class Engine implements Interface24, Runnable, FocusListener, Wi
 		ChatLine.aString1093 = "1.1";
 		try {
 			MaterialProp15.aString9967 = System.getProperty("java.vendor");
-			ChatLine.aString1093 = System.getProperty("java.version");
+			// Android reports java.version as "0", which the client parses as
+			// Java 0 and then hides the login screen behind its "Unsupported
+			// Java Warning". The real property cannot be corrected there --
+			// libcore silently ignores setProperty for java.version and other
+			// core properties -- so allow an override. Unset on desktop.
+			String javaVersion = System.getProperty("darkan.java.version");
+			ChatLine.aString1093 = javaVersion != null && !javaVersion.isEmpty()
+					? javaVersion : System.getProperty("java.version");
 		} catch (Exception ignored) {
 		}
 		try {

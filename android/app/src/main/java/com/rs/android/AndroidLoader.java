@@ -91,9 +91,10 @@ public final class AndroidLoader {
         // Android reports java.version as "0", which the client parses into a
         // major version of 0 and then blocks the login screen behind its
         // "Unsupported Java Warning" (CS2Interpreter.checkJavaVersion wants 6+).
-        // The value is meaningless on Android, so report the level these sources
-        // are actually compiled for.
-        System.setProperty("java.version", "17.0.0");
+        // Correcting java.version itself is not possible: libcore wraps the
+        // core properties in PropertiesWithNonOverrideableDefaults and silently
+        // drops the write. Engine reads this override instead.
+        System.setProperty("darkan.java.version", "17.0.0");
 
         // The client derives its own scratch paths from user.home, which is "/".
         System.setProperty("user.home", AndroidPlatform.getWritableDir());
@@ -112,6 +113,7 @@ public final class AndroidLoader {
         showStatus("Starting the client\u2026");
         loader.setSize(GAME_WIDTH, GAME_HEIGHT);
         Log.i(TAG, "client: java.version=" + System.getProperty("java.version")
+                + " override=" + System.getProperty("darkan.java.version")
                 + " os.name=" + System.getProperty("os.name"));
         client clnt = new client();
         clnt.supplyApplet(loader);
