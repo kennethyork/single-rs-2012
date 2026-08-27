@@ -93,14 +93,20 @@ if grep -qF "first frame presented" "$LOG_DIR/logcat-full.txt" 2>/dev/null; then
             2)
                 # Login form. Single-player creates the account on first login
                 # and ignores the password (LocalAccountStore.authenticate), so
-                # any name matching [a-z0-9_]{1,12} will do.
-                echo "  logging in"
-                adb shell input tap 315 108 || true      # username field
+                # any name matching [a-z0-9_]{1,12} will do -- note the length
+                # limit: an over-long name is silently rejected.
+                #
+                # Tab moves between the fields. Tapping the password field does
+                # not focus it, which previously appended the password to the
+                # username and produced a name too long to authenticate.
+                echo "  logging in as androidtest"
+                adb shell input tap 315 108 || true      # focus the login box
                 adb shell input text "androidtest" || true
-                adb shell input tap 315 136 || true      # password field
+                adb shell input keyevent 61 || true      # KEYCODE_TAB
                 adb shell input text "test" || true
+                sleep 3                                  # let the client redraw
                 adb exec-out screencap -p > "$LOG_DIR/screen-typed.png" 2>/dev/null || true
-                adb shell input tap 315 161 || true      # Log In
+                adb shell input keyevent 66 || true      # KEYCODE_ENTER submits
                 ;;
         esac
     done
