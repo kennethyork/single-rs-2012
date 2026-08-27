@@ -137,12 +137,13 @@ jobs:
           cores: 2
           # Extra userdata room: the cache is extracted out of the APK on first
           # launch, so a full run needs the ~840 MB twice.
-          # The default AVD screen is 640x320, into which the client's 774x588
-          # frame is scaled down far enough that its own error messages cannot
-          # be read in a screenshot. Give it room to be diagnosable.
+          # 800x600 is close to 1:1 with the client's own 774x588 frame. The
+          # default 640x320 scaled its text below legibility; 1280x800 was
+          # legible but made every frame a large upscale, and the client was
+          # still fetching updates minutes in.
           emulator-options: >-
             -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-            -no-snapshot -partition-size 6144 -skin 1280x800
+            -no-snapshot -partition-size 6144 -skin 800x600
           disable-animations: true
           # Unpacking ~840 MB inside an emulator is slow; give it room.
           script: >-

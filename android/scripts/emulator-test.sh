@@ -19,7 +19,36 @@ WATCH_SECONDS="${WATCH_SECONDS:-240}"
 # to reach the world server rather than stopping at the missing cache.
 EXPECT_FULL="${EXPECT_FULL:-0}"
 
+# The client renders at this size and GameSurfaceView letterboxes it to fit,
+# so UI positions are stable in its coordinates but not in the screen's.
+GAME_W=774
+GAME_H=588
+
 mkdir -p "$LOG_DIR"
+
+# Taps a point given in the client's frame coordinates.
+#
+# Hardcoding screen coordinates silently broke the moment the emulator's
+# resolution changed -- the taps still "worked", they just landed on nothing.
+tap_game() {
+    local gx=$1 gy=$2
+    # wm size reports the display's natural (portrait) orientation while the
+    # activity runs landscape, so the axes come back swapped.
+    local portrait width height
+    portrait=$(adb shell wm size | sed 's/.*: //' | tr -d '\r')
+    height=${portrait%x*}
+    width=${portrait#*x}
+    # Per-mille scale, matching GameSurfaceView.screenToGame's min(fit).
+    local sx sy scale
+    scale=$(( width * 1000 / GAME_W ))
+    if [ $(( height * 1000 / GAME_H )) -lt "$scale" ]; then
+        scale=$(( height * 1000 / GAME_H ))
+    fi
+    sx=$(( (width - GAME_W * scale / 1000) / 2 + gx * scale / 1000 ))
+    sy=$(( (height - GAME_H * scale / 1000) / 2 + gy * scale / 1000 ))
+    echo "  tap game(${gx},${gy}) -> screen(${sx},${sy}) on ${width}x${height}"
+    adb shell input tap "$sx" "$sy" || true
+}
 
 # Fail fast rather than spending fifteen minutes discovering the APK was built
 # without the cache -- exactly what a falsy empty string in the workflow's build
@@ -81,14 +110,12 @@ if grep -qF "first frame presented" "$LOG_DIR/logcat-full.txt" 2>/dev/null; then
         # the display is portrait 320x640, so which space input tap uses is not
         # obvious -- try each candidate on a separate pass and let the
         # screenshots and the logged touch coordinates say which one lands.
-        # adb input tap uses the activity's own landscape space, confirmed by
-        # the logged touch: a tap at 315,176 arrived as raw=315.0,176.0 in a
-        # 640x320 view.
+        # Positions are in the client's frame, converted by tap_game.
         case "$shot" in
             1)
                 # First-run screen: "click below to auto choose best graphics".
                 echo "  tapping Auto Setup"
-                adb shell input tap 315 176 || true
+                tap_game 378 323
                 ;;
             2)
                 # Login form. Single-player creates the account on first login
@@ -100,7 +127,7 @@ if grep -qF "first frame presented" "$LOG_DIR/logcat-full.txt" 2>/dev/null; then
                 # not focus it, which previously appended the password to the
                 # username and produced a name too long to authenticate.
                 echo "  logging in as androidtest"
-                adb shell input tap 315 108 || true      # focus the login box
+                tap_game 378 198                         # focus the login box
                 adb shell input text "androidtest" || true
                 adb shell input keyevent 61 || true      # KEYCODE_TAB
                 adb shell input text "test" || true
