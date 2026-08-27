@@ -22,6 +22,7 @@ import com.rs.utils.Ticks;
 import com.rs.utils.shop.ShopsHandler;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @PluginEventHandler
 public class ShootingStars {
@@ -73,7 +74,7 @@ public class ShootingStars {
     }
 
     private static Star currentStar = null;
-    private static final List<Location> LOCATIONS = new ArrayList<>(Arrays.stream(Location.values()).toList());
+    private static final List<Location> LOCATIONS = new ArrayList<>(Arrays.stream(Location.values()).collect(Collectors.toList()));
     private static PeekingIterator<Location> locIterator = Iterators.peekingIterator(LOCATIONS.iterator());
 
     @ServerStartupEvent

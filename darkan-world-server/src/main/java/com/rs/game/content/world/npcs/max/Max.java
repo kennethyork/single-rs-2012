@@ -18,6 +18,7 @@ import com.rs.plugin.handlers.NPCInstanceHandler;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @PluginEventHandler
 public class Max extends NPC {
@@ -144,7 +145,7 @@ public class Max extends NPC {
 		Collections.shuffle(nextTasks);
 		if (task == null)
 			return nextTasks;
-		return nextTasks.stream().filter(pred -> !pred.getClass().isAssignableFrom(task.getClass())).toList();
+		return nextTasks.stream().filter(pred -> !pred.getClass().isAssignableFrom(task.getClass())).collect(Collectors.toList());
 	}
 	
 	public static NPCClickHandler clickClose = new NPCClickHandler(new Object[] { NORM, PESTLE, FLETCH, SMITH, ADZE }, new String[] { "Talk-to", "Trade" }, e -> {

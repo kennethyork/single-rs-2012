@@ -14,10 +14,86 @@
 // `drop` holds internal class names without the .class suffix, e.g.
 // 'com/rs/lib/util/MapXTEAs'. Nested and anonymous classes go with their outer
 // class -- D8 rejects an orphaned nested class whose nest host is absent.
-ext.downgradeJar = { java.io.File input, java.io.File output, int targetMajor, List<String> drop = [] ->
+// Repoints a static call to a different owner class, in place, by appending a
+// Utf8 + Class pair to the constant pool and pointing the matching Methodrefs at
+// it. Descriptors are untouched, so the call stays type-correct and the verifier
+// is satisfied.
+//
+// Used for JDK methods Android simply does not have, where the calling class is
+// too large to reasonably reimplement -- ServerChannelHandler is the whole netty
+// server setup, and asks for one virtual-thread executor.
+ext.redirectStaticCall = { byte[] data, String fromOwner, String member, String toOwner ->
+    def u2 = { int at -> ((data[at] & 0xFF) << 8) | (data[at + 1] & 0xFF) }
+    int count = u2(8)
+    // index -> [tag, offset]; and the byte range the pool occupies.
+    def entries = [:]
+    int p = 10
+    for (int i = 1; i < count; i++) {
+        int tag = data[p] & 0xFF
+        entries[i] = [tag, p]
+        switch (tag) {
+            case 1: p += 3 + u2(p + 1); break
+            case 7: case 8: case 16: case 19: case 20: p += 3; break
+            case 15: p += 4; break
+            case 3: case 4: case 9: case 10: case 11: case 12: case 17: case 18: p += 5; break
+            case 5: case 6: p += 9; i++; break
+            default: return null          // unknown tag: leave the class alone
+        }
+    }
+    int poolEnd = p
+
+    def utf8 = { int i ->
+        def e = entries[i]
+        if (e == null || e[0] != 1) return null
+        int at = e[1]
+        new String(data, at + 3, u2(at + 1), 'UTF-8')
+    }
+
+    // Methodrefs matching fromOwner.member, by pool index.
+    def targets = entries.findAll { i, e ->
+        if (e[0] != 10 && e[0] != 11) return false
+        int classIdx = u2(e[1] + 1), natIdx = u2(e[1] + 3)
+        def classEntry = entries[classIdx], natEntry = entries[natIdx]
+        if (classEntry == null || classEntry[0] != 7 || natEntry == null || natEntry[0] != 12) return false
+        if (utf8(u2(classEntry[1] + 1)) != fromOwner) return false
+        (utf8(u2(natEntry[1] + 1)) + utf8(u2(natEntry[1] + 3))) == member
+    }
+    if (targets.isEmpty()) return null
+
+    // Appending keeps every existing index valid.
+    int newUtf8Index = count
+    int newClassIndex = count + 1
+    byte[] ownerBytes = toOwner.getBytes('UTF-8')
+
+    def out = new java.io.ByteArrayOutputStream()
+    out.write(data, 0, 8)
+    out.write((byte) (((count + 2) >> 8) & 0xFF))
+    out.write((byte) ((count + 2) & 0xFF))
+    byte[] pool = new byte[poolEnd - 10]
+    System.arraycopy(data, 10, pool, 0, pool.length)
+    targets.each { i, e ->
+        int at = e[1] + 1 - 10                       // class_index, pool-relative
+        pool[at] = (byte) ((newClassIndex >> 8) & 0xFF)
+        pool[at + 1] = (byte) (newClassIndex & 0xFF)
+    }
+    out.write(pool, 0, pool.length)
+    out.write(1)                                     // CONSTANT_Utf8
+    out.write((byte) ((ownerBytes.length >> 8) & 0xFF))
+    out.write((byte) (ownerBytes.length & 0xFF))
+    out.write(ownerBytes, 0, ownerBytes.length)
+    out.write(7)                                     // CONSTANT_Class
+    out.write((byte) ((newUtf8Index >> 8) & 0xFF))
+    out.write((byte) (newUtf8Index & 0xFF))
+    out.write(data, poolEnd, data.length - poolEnd)
+    return [bytes: out.toByteArray(), count: targets.size()]
+}
+
+ext.downgradeJar = { java.io.File input, java.io.File output, int targetMajor, List<String> drop = [],
+                     List<List<String>> redirects = [] ->
     output.parentFile.mkdirs()
     def rewritten = 0
     def dropped = 0
+    def redirected = 0
     new java.util.zip.ZipFile(input).withCloseable { zip ->
         new java.util.zip.ZipOutputStream(new FileOutputStream(output)).withCloseable { out ->
             zip.entries().each { entry ->
@@ -45,6 +121,16 @@ ext.downgradeJar = { java.io.File input, java.io.File output, int targetMajor, L
                         rewritten++
                     }
                 }
+                if (entry.name.endsWith('.class')) {
+                    redirects.each { from, member, to ->
+                        def result = redirectStaticCall(bytes, from, member, to)
+                        if (result != null) {
+                            bytes = result.bytes
+                            redirected += result.count
+                            logger.info("  redirected ${result.count}x ${from}.${member} -> ${to} in ${entry.name}")
+                        }
+                    }
+                }
                 def copy = new java.util.zip.ZipEntry(entry.name)
                 copy.time = 0L
                 out.putNextEntry(copy)
@@ -54,5 +140,6 @@ ext.downgradeJar = { java.io.File input, java.io.File output, int targetMajor, L
         }
     }
     logger.lifecycle("downgradeJar: ${input.name} -> ${output.name} " +
-            "(${rewritten} classes capped at major ${targetMajor}, ${dropped} dropped)")
+            "(${rewritten} classes capped at major ${targetMajor}, ${dropped} dropped, " +
+            "${redirected} call(s) redirected)")
 }

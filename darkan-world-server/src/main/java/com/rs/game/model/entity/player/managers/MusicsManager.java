@@ -346,7 +346,7 @@ public final class MusicsManager {
             //Tack on region music to local genre.
 			List<Integer> regionSongs = new ArrayList<>();
             try {
-                regionSongs.addAll((Arrays.stream(Music.getRegionMusics(player.getRegionId())).boxed().toList()));
+                regionSongs.addAll((Arrays.stream(Music.getRegionMusics(player.getRegionId())).boxed().collect(Collectors.toList())));
             } catch (NullPointerException e) {
                 //empty song region
             }

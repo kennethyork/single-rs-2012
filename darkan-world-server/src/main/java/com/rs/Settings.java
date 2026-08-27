@@ -216,7 +216,7 @@ public final class Settings {
 
 	public int getXpRate() {
 		String override = System.getProperty("darkan.xpRate");
-		if (override != null && !override.isBlank()) {
+		if (override != null && !override.trim().isEmpty()) {
 			try {
 				int parsed = Integer.parseInt(override);
 				if (parsed > 0)
@@ -234,7 +234,7 @@ public final class Settings {
 
 	public String getCachePath() {
 		String override = System.getProperty("darkan.cache.path");
-		String path = override != null && !override.isBlank() ? override : (cachePath != null ? cachePath : DEFAULTS.cachePath);
+		String path = override != null && !override.trim().isEmpty() ? override : (cachePath != null ? cachePath : DEFAULTS.cachePath);
 		return path.endsWith(File.separator) ? path : path + File.separator;
 	}
 
@@ -244,7 +244,7 @@ public final class Settings {
 
 	public String getSavePath() {
 		String override = System.getProperty("darkan.save.path");
-		return override != null && !override.isBlank() ? override : (savePath != null ? savePath : DEFAULTS.savePath);
+		return override != null && !override.trim().isEmpty() ? override : (savePath != null ? savePath : DEFAULTS.savePath);
 	}
 
 	/**
@@ -260,7 +260,7 @@ public final class Settings {
 	 */
 	public static String getDataPath() {
 		String override = System.getProperty("darkan.data.path");
-		String path = override != null && !override.isBlank() ? override : "./data";
+		String path = override != null && !override.trim().isEmpty() ? override : "./data";
 		return path.endsWith(File.separator) || path.endsWith("/") ? path : path + "/";
 	}
 

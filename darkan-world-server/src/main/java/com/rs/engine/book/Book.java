@@ -120,7 +120,7 @@ public abstract class Book {
 			pages.add(new BookPage(leftPageLines, rightPageLines));
 		}
 
-		return pages.toArray(BookPage[]::new);
+		return pages.toArray(new BookPage[0]);
 	}
 
 	public void nextPage() {

@@ -16,6 +16,7 @@ import kotlin.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @PluginEventHandler
 public class Matthias extends NPC {
@@ -38,7 +39,7 @@ public class Matthias extends NPC {
 		boolean hasBird = getId() == 5092;
 		List<GameObject> posts = POST_TILES.stream()
 				.filter(obj -> obj.getId() == (hasBird ? 19220 : 19221))
-				.toList();
+				.collect(Collectors.toList());
 		if (posts.isEmpty())
 			return;
 		GameObject post = posts.get(Utils.random(posts.size()));
@@ -73,7 +74,7 @@ public class Matthias extends NPC {
 		POST_TILES = World.getAllObjectsInChunkRange(Tile.of(2374, 3605, 0).getChunkId(), 2)
 			.stream()
 			.filter(obj -> obj != null && (obj.getId() == 19220 || obj.getId() == 19221))
-			.toList();
+			.collect(Collectors.toList());
 	}
 
 	public static NPCClickHandler handleMatthias = new NPCClickHandler(new Object[] { 5092, 5093 }, e -> {

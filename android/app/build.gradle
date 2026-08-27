@@ -314,6 +314,16 @@ tasks.register('downgradeDarkanCore') {
                 // both API 33+. Replaced by
                 // src/main/java/com/rs/lib/util/RecordTypeAdapterFactory.java.
                 'com/rs/lib/util/RecordTypeAdapterFactory',
+        ], [
+                // Android has no virtual threads at any API level, and the core
+                // jar asks for them in ServerChannelHandler (the whole netty
+                // server setup) and DBItemManager (reached by Logger.handle via
+                // DBConnection.getErrors, so it was fatal well beyond the
+                // database). Both are too large to reasonably reimplement for
+                // one call, so the call itself is repointed.
+                ['java/util/concurrent/Executors',
+                 'newVirtualThreadPerTaskExecutor()Ljava/util/concurrent/ExecutorService;',
+                 'com/rs/android/AndroidExecutors'],
         ])
     }
 }

@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.Comparator;
+import java.util.stream.Collectors;
 
 public class GEManager extends DBItemManager {
 	private final Object localLock = new Object();
@@ -92,7 +93,7 @@ public class GEManager extends DBItemManager {
 	public List<Offer> getSync(String username) {
 		if (Settings.getConfig().isSinglePlayer()) {
 			synchronized (localLock) {
-				return loadLocalOffers().stream().filter(offer -> offer.getOwner().equals(username)).toList();
+				return loadLocalOffers().stream().filter(offer -> offer.getOwner().equals(username)).collect(Collectors.toList());
 			}
 		}
 		FindIterable<Document> offerDocs = getDocs().find(Filters.eq("owner", username));
@@ -145,7 +146,7 @@ public class GEManager extends DBItemManager {
 						.filter(offer -> offer.getState() == State.STABLE && offer.getItemId() == other.getItemId() && offer.isSelling() != other.isSelling())
 						.filter(offer -> other.isSelling() ? offer.getPrice() >= other.getPrice() : offer.getPrice() <= other.getPrice())
 						.sorted(Comparator.comparingInt(Offer::getPrice))
-						.toList();
+						.collect(Collectors.toList());
 			}
 		}
 		List<Offer> result = new ArrayList<>();
@@ -184,7 +185,7 @@ public class GEManager extends DBItemManager {
 	public void getAllOffersOfType(boolean selling, Consumer<List<Offer>> func) {
 		if (Settings.getConfig().isSinglePlayer()) {
 			synchronized (localLock) {
-				func.accept(loadLocalOffers().stream().filter(offer -> offer.getState() == State.STABLE && offer.isSelling() == selling).toList());
+				func.accept(loadLocalOffers().stream().filter(offer -> offer.getState() == State.STABLE && offer.isSelling() == selling).collect(Collectors.toList()));
 			}
 			return;
 		}
@@ -205,7 +206,7 @@ public class GEManager extends DBItemManager {
 	public List<Offer> getAllStableOffersSync() {
 		if (Settings.getConfig().isSinglePlayer()) {
 			synchronized (localLock) {
-				return loadLocalOffers().stream().filter(offer -> offer.getState() == State.STABLE).toList();
+				return loadLocalOffers().stream().filter(offer -> offer.getState() == State.STABLE).collect(Collectors.toList());
 			}
 		}
 		List<Offer> result = new ArrayList<>();
@@ -227,7 +228,7 @@ public class GEManager extends DBItemManager {
 
 	private List<Offer> loadLocalOffers() {
 		String json = LocalFileStore.read("ge/offers.json");
-		if (json == null || json.isBlank()) return new ArrayList<>();
+		if (json == null || json.trim().isEmpty()) return new ArrayList<>();
 		try {
 			List<Offer> offers = JsonFileManager.getGson().fromJson(json, new TypeToken<List<Offer>>() { }.getType());
 			return offers == null ? new ArrayList<>() : new ArrayList<>(offers);

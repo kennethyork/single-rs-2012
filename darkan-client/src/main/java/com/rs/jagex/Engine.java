@@ -374,7 +374,7 @@ public abstract class Engine implements Interface24, Runnable, FocusListener, Wi
 	}
 
 	File method4657(String string_1, String string_2, int i_3) {
-		if (i_3 == 0 && !Loader.OFFLINE_CACHE_PATH.isBlank()) {
+		if (i_3 == 0 && !Loader.OFFLINE_CACHE_PATH.trim().isEmpty()) {
 			File offlineCache = new File(Loader.OFFLINE_CACHE_PATH).getAbsoluteFile();
 			if (!offlineCache.exists() && !offlineCache.mkdirs())
 				throw new RuntimeException("Unable to create offline cache directory: " + offlineCache);

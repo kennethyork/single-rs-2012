@@ -60,6 +60,7 @@ import kotlin.Pair;
 import java.util.*;
 
 import static com.rs.game.model.entity.npc.combat.CombatScript.*;
+import java.util.stream.Collectors;
 
 public enum Scroll {
 	/**
@@ -718,7 +719,7 @@ public enum Scroll {
 			familiar.sync(7998, 1346);
 			World.sendProjectile(familiar, target, 1347, new Pair<>(34, 16), 30, 5, 16, 0, proj -> target.spotAnim(1348));
 			if (target instanceof Player player) {
-				var foods = Arrays.stream(player.getInventory().getItems().array()).filter(it -> it != null && Foods.isConsumable(it)).toList();
+				var foods = Arrays.stream(player.getInventory().getItems().array()).filter(it -> it != null && Foods.isConsumable(it)).collect(Collectors.toList());
 				if (!foods.isEmpty()) {
 					var food = foods.get(Utils.random(foods.size()));
 					food.setId(2959);
