@@ -7,12 +7,18 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
+import android.text.InputType;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.inputmethod.BaseInputConnection;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
+import android.view.inputmethod.InputMethodManager;
 
 /**
  * Android SurfaceView that hosts the 2012 client's safe-mode (software) render
@@ -32,6 +38,7 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
     private final Rect dstRect = new Rect();
 
     private boolean touchLogged;
+    private boolean keyboardVisible;
 
     private final GestureDetector gestureDetector;
     private final ScaleGestureDetector scaleDetector;
@@ -52,6 +59,7 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
         getHolder().addCallback(this);
         setFocusable(true);
         setFocusableInTouchMode(true);
+        requestFocus();
         paint.setFilterBitmap(false);
         paint.setAntiAlias(false);
         statusPaint.setColor(Color.WHITE);
@@ -85,6 +93,16 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
 
             @Override
             public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy) {
+                return true;
+            }
+
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                // The client draws its own login and chat fields, so Android has
+                // nothing to focus and no reason to raise the keyboard on its
+                // own. Double tap toggles it.
+                if (keyboardVisible) hideKeyboard(); else showKeyboard();
+                keyboardVisible = !keyboardVisible;
                 return true;
             }
         });
@@ -131,6 +149,106 @@ public class GameSurfaceView extends SurfaceView implements SurfaceHolder.Callba
         dispatchToClient(java.awt.event.MouseEvent.MOUSE_PRESSED, gameX, gameY, button);
         dispatchToClient(java.awt.event.MouseEvent.MOUSE_RELEASED, gameX, gameY, button);
         dispatchToClient(java.awt.event.MouseEvent.MOUSE_CLICKED, gameX, gameY, button);
+    }
+
+    /**
+     * Declares this view as a text target with no input type of its own.
+     *
+     * TYPE_NULL makes soft keyboards fall back to sending raw key events rather
+     * than editing a text buffer, which is what the client wants: it has its own
+     * login and chat fields and takes characters through AWT keyTyped.
+     */
+    @Override
+    public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
+        outAttrs.inputType = InputType.TYPE_NULL;
+        outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_FLAG_NO_FULLSCREEN;
+        return new BaseInputConnection(this, false);
+    }
+
+    @Override
+    public boolean onCheckIsTextEditor() {
+        return true;
+    }
+
+    /** Raises the soft keyboard, for the login form and chat. */
+    public void showKeyboard() {
+        requestFocus();
+        InputMethodManager imm = (InputMethodManager) getContext()
+                .getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+        if (imm != null) imm.showSoftInput(this, InputMethodManager.SHOW_IMPLICIT);
+    }
+
+    /** Hides the soft keyboard. */
+    public void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) getContext()
+                .getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+        if (imm != null) imm.hideSoftInputFromWindow(getWindowToken(), 0);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        // Leave the system keys alone: back should still leave the game.
+        if (keyCode == KeyEvent.KEYCODE_BACK || keyCode == KeyEvent.KEYCODE_HOME)
+            return super.onKeyDown(keyCode, event);
+        dispatchKeyToClient(java.awt.event.KeyEvent.KEY_PRESSED, keyCode, event);
+        int typed = event.getUnicodeChar(event.getMetaState());
+        if (typed != 0)
+            dispatchKeyToClient(java.awt.event.KeyEvent.KEY_TYPED, keyCode, event);
+        return true;
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK || keyCode == KeyEvent.KEYCODE_HOME)
+            return super.onKeyUp(keyCode, event);
+        dispatchKeyToClient(java.awt.event.KeyEvent.KEY_RELEASED, keyCode, event);
+        return true;
+    }
+
+    private void dispatchKeyToClient(int id, int androidKeyCode, KeyEvent event) {
+        java.awt.Canvas canvas = com.rs.jagex.Class351.gameCanvas;
+        if (canvas == null) return;
+        int unicode = event.getUnicodeChar(event.getMetaState());
+        // keyTyped carries the character; keyPressed/keyReleased carry the code,
+        // which the client uses to index a lookup table of AWT VK values.
+        char keyChar = id == java.awt.event.KeyEvent.KEY_TYPED && unicode != 0
+                ? (char) unicode : (char) java.awt.event.KeyEvent.CHAR_UNDEFINED;
+        int awtCode = id == java.awt.event.KeyEvent.KEY_TYPED ? 0 : awtKeyCode(androidKeyCode, unicode);
+        canvas.dispatchInputEvent(new java.awt.event.KeyEvent(
+                canvas, id, System.currentTimeMillis(), 0, awtCode, keyChar, 0));
+    }
+
+    /**
+     * Android key code to AWT virtual key code.
+     *
+     * AWT numbers letters and digits by their ASCII uppercase value, so most keys
+     * fall out of the character the event carries; only the named keys need a
+     * table.
+     */
+    private static int awtKeyCode(int androidKeyCode, int unicode) {
+        switch (androidKeyCode) {
+            case KeyEvent.KEYCODE_ENTER:
+            case KeyEvent.KEYCODE_NUMPAD_ENTER: return java.awt.event.KeyEvent.VK_ENTER;
+            case KeyEvent.KEYCODE_DEL:          return java.awt.event.KeyEvent.VK_BACK_SPACE;
+            case KeyEvent.KEYCODE_TAB:          return java.awt.event.KeyEvent.VK_TAB;
+            case KeyEvent.KEYCODE_ESCAPE:       return java.awt.event.KeyEvent.VK_ESCAPE;
+            case KeyEvent.KEYCODE_SPACE:        return java.awt.event.KeyEvent.VK_SPACE;
+            case KeyEvent.KEYCODE_DPAD_LEFT:    return java.awt.event.KeyEvent.VK_LEFT;
+            case KeyEvent.KEYCODE_DPAD_UP:      return java.awt.event.KeyEvent.VK_UP;
+            case KeyEvent.KEYCODE_DPAD_RIGHT:   return java.awt.event.KeyEvent.VK_RIGHT;
+            case KeyEvent.KEYCODE_DPAD_DOWN:    return java.awt.event.KeyEvent.VK_DOWN;
+            case KeyEvent.KEYCODE_SHIFT_LEFT:
+            case KeyEvent.KEYCODE_SHIFT_RIGHT:  return java.awt.event.KeyEvent.VK_SHIFT;
+            case KeyEvent.KEYCODE_CTRL_LEFT:
+            case KeyEvent.KEYCODE_CTRL_RIGHT:   return java.awt.event.KeyEvent.VK_CONTROL;
+            case KeyEvent.KEYCODE_ALT_LEFT:
+            case KeyEvent.KEYCODE_ALT_RIGHT:    return java.awt.event.KeyEvent.VK_ALT;
+            default: break;
+        }
+        if (unicode >= 'a' && unicode <= 'z') return unicode - ('a' - 'A');
+        if (unicode >= 'A' && unicode <= 'Z') return unicode;
+        if (unicode >= '0' && unicode <= '9') return unicode;
+        return 0;
     }
 
     /** Called by the engine thread each frame. */

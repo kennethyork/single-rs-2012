@@ -83,11 +83,26 @@ if grep -qF "first frame presented" "$LOG_DIR/logcat-full.txt" 2>/dev/null; then
         # screenshots and the logged touch coordinates say which one lands.
         # adb input tap uses the activity's own landscape space, confirmed by
         # the logged touch: a tap at 315,176 arrived as raw=315.0,176.0 in a
-        # 640x320 view. That is the first-run screen's "Auto Setup" button.
-        if [ "$shot" = "1" ]; then
-            echo "  tapping Auto Setup"
-            adb shell input tap 315 176 || true
-        fi
+        # 640x320 view.
+        case "$shot" in
+            1)
+                # First-run screen: "click below to auto choose best graphics".
+                echo "  tapping Auto Setup"
+                adb shell input tap 315 176 || true
+                ;;
+            2)
+                # Login form. Single-player creates the account on first login
+                # and ignores the password (LocalAccountStore.authenticate), so
+                # any name matching [a-z0-9_]{1,12} will do.
+                echo "  logging in"
+                adb shell input tap 315 108 || true      # username field
+                adb shell input text "androidtest" || true
+                adb shell input tap 315 136 || true      # password field
+                adb shell input text "test" || true
+                adb exec-out screencap -p > "$LOG_DIR/screen-typed.png" 2>/dev/null || true
+                adb shell input tap 315 161 || true      # Log In
+                ;;
+        esac
     done
 fi
 
