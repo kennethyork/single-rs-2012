@@ -88,6 +88,13 @@ public final class AndroidLoader {
         System.setProperty("darkan.singlePlayer", "true");
         System.setProperty("darkan.save.path", AndroidPlatform.getSaveDir());
         new File(AndroidPlatform.getSaveDir()).mkdirs();
+        // Android reports java.version as "0", which the client parses into a
+        // major version of 0 and then blocks the login screen behind its
+        // "Unsupported Java Warning" (CS2Interpreter.checkJavaVersion wants 6+).
+        // The value is meaningless on Android, so report the level these sources
+        // are actually compiled for.
+        System.setProperty("java.version", "17.0.0");
+
         // The client derives its own scratch paths from user.home, which is "/".
         System.setProperty("user.home", AndroidPlatform.getWritableDir());
         // It opens <user.home>/.darkanrs/caches/dk_cl_*.dat directly, without
