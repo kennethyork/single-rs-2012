@@ -304,7 +304,7 @@ public class GraveStone extends NPC {// 652 - gravestone selection interface
         });
 		Integer[] keptItems = new Integer[keptAmount];
 		for (int i = 0; i < keptAmount; i++)
-			keptItems[i] = droppedItems.removeFirst();
+			keptItems[i] = droppedItems.remove(0);
 		return new Integer[][] { keptItems, droppedItems.toArray(new Integer[0]), atWilderness ? new Integer[0] : protectedItems.toArray(new Integer[0]),
 				atWilderness ? new Integer[0] : lostItems.toArray(new Integer[0]) };
 

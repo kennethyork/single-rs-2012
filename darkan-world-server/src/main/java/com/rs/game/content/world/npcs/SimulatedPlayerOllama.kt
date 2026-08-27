@@ -9,11 +9,11 @@ import com.rs.db.local.LocalFileStore
 import com.rs.game.model.entity.player.Player
 import com.rs.game.tasks.WorldTasks
 import com.rs.lib.util.Logger
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.time.Duration
 import java.util.ArrayDeque
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -38,7 +38,7 @@ object SimulatedPlayerOllama {
     )
 
     private val gson = Gson()
-    private val client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build()
+    private val client = OkHttpClient.Builder().connectTimeout(2, java.util.concurrent.TimeUnit.SECONDS).build()
     private val histories = ConcurrentHashMap<String, ArrayDeque<Turn>>()
     private val queues = ConcurrentHashMap<String, ConcurrentLinkedQueue<PendingReply>>()
     private val activeConversations = ConcurrentHashMap.newKeySet<String>()
@@ -212,22 +212,32 @@ object SimulatedPlayerOllama {
             })
         }
         val request = try {
-            HttpRequest.newBuilder(URI.create(settings.baseUrl.trimEnd('/') + "/api/chat"))
-                .timeout(Duration.ofSeconds(settings.timeoutSeconds.coerceIn(5, 120).toLong()))
+            Request.Builder()
+                .url(settings.baseUrl.trimEnd('/') + "/api/chat")
                 .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(body.toString())).build()
+                .post(body.toString().toRequestBody("application/json".toMediaType()))
+                .build()
         } catch (_: Throwable) {
             finish(key, pending, null)
             return
         }
-        client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).whenComplete { response, error ->
-            val generated = if (error == null && response?.statusCode() == 200) parseReply(response.body()) else null
-            if (generated == null) markUnavailable(error, response?.statusCode()) else {
-                lastSuccessfulResponse.set(System.currentTimeMillis())
-                unavailableUntil.set(0L)
+        client.newCall(request).enqueue(object : okhttp3.Callback {
+            override fun onFailure(call: okhttp3.Call, error: java.io.IOException) {
+                markUnavailable(error, 0)
+                finish(key, pending, null)
             }
-            finish(key, pending, generated)
-        }
+            override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
+                response.use {
+                    val body = it.body?.string()
+                    val generated = if (it.code == 200 && body != null) parseReply(body) else null
+                    if (generated == null) markUnavailable(null, it.code) else {
+                        lastSuccessfulResponse.set(System.currentTimeMillis())
+                        unavailableUntil.set(0L)
+                    }
+                    finish(key, pending, generated)
+                }
+            }
+        })
     }
 
     private fun finish(key: String, pending: PendingReply, generated: String?) {
@@ -288,23 +298,31 @@ object SimulatedPlayerOllama {
         if (!settings.enabled) return
         val model = activeModel()
         val request = try {
-            HttpRequest.newBuilder(URI.create(settings.baseUrl.trimEnd('/') + "/api/tags"))
-                .timeout(Duration.ofSeconds(3)).GET().build()
+            Request.Builder()
+                .url(settings.baseUrl.trimEnd('/') + "/api/tags")
+                .get().build()
         } catch (_: Throwable) {
             deliver("Ollama connection check: invalid endpoint; bots will remain silent.")
             return
         }
-        client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).whenComplete { response, error ->
-            val result = if (error == null && response?.statusCode() == 200) {
-                val installed = try {
-                    JsonParser.parseString(response.body()).asJsonObject.getAsJsonArray("models")
-                        ?.any { it.asJsonObject.get("name")?.asString == model } == true
-                } catch (_: Throwable) { false }
-                if (installed) "<col=80ff80>Ollama connection check: online; $model is installed.</col>"
-                else "<col=ffcc00>Ollama is online, but $model is not installed. Run: ollama pull $model</col>"
-            } else "<col=ffcc00>Ollama connection check: offline; bots will remain silent.</col>"
-            WorldTasks.delay(0) { deliver(result) }
-        }
+        client.newCall(request).enqueue(object : okhttp3.Callback {
+            override fun onFailure(call: okhttp3.Call, error: java.io.IOException) {
+                WorldTasks.delay(0) { deliver("<col=ffcc00>Ollama connection check: offline; bots will remain silent.</col>") }
+            }
+            override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
+                response.use {
+                    val result = if (it.code == 200) {
+                        val installed = try {
+                            JsonParser.parseString(it.body?.string()).asJsonObject.getAsJsonArray("models")
+                                ?.any { m -> m.asJsonObject.get("name")?.asString == model } == true
+                        } catch (_: Throwable) { false }
+                        if (installed) "<col=80ff80>Ollama connection check: online; $model is installed.</col>"
+                        else "<col=ffcc00>Ollama is online, but $model is not installed. Run: ollama pull $model</col>"
+                    } else "<col=ffcc00>Ollama connection check: offline; bots will remain silent.</col>"
+                    WorldTasks.delay(0) { deliver(result) }
+                }
+            }
+        })
     }
 
     private fun isLocalEndpoint(baseUrl: String): Boolean = try {

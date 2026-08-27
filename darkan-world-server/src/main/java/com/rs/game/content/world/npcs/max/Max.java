@@ -130,7 +130,7 @@ public class Max extends NPC {
 
 	public void nextTask() {
 		getActionManager().forceStop();
-		task = getNextPossibleTasks().getFirst();
+		task = getNextPossibleTasks().get(0);
 	}
 
 	private List<Task> getNextPossibleTasks() {

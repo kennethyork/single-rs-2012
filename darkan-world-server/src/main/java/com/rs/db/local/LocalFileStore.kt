@@ -21,7 +21,7 @@ object LocalFileStore {
     fun writeAtomic(relativePath: String, contents: String) {
         val target = file(relativePath).toPath()
         val temporary = target.resolveSibling("${target.fileName}.tmp")
-        Files.writeString(temporary, contents, StandardCharsets.UTF_8)
+        Files.newBufferedWriter(temporary, StandardCharsets.UTF_8).use { it.write(contents) }
         try {
             Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
         } catch (_: Exception) {

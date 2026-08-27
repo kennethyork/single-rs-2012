@@ -174,7 +174,7 @@ public class Mining extends Action {
 	public int processWithDelay(Entity entity) {
 		int level = entity instanceof Player player ? player.getSkills().getLevel(Constants.MINING) + player.getInvisibleSkillBoost(Constants.MINING) : 99;
 		boolean success = false;
-		if (type.getOres().size() == 1 && !type.getOres().getFirst().checkRequirements(entity instanceof Player player ? player : null))
+		if (type.getOres().size() == 1 && !type.getOres().get(0).checkRequirements(entity instanceof Player player ? player : null))
 			return -1;
 		for (Ore ore : type.getOres()) {
 			if (ore.checkRequirements(entity instanceof Player player ? player : null) && ore.rollSuccess(entity instanceof Player player ? player : null, level)) {

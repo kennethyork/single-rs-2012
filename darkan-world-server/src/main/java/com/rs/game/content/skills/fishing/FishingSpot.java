@@ -69,7 +69,7 @@ public enum FishingSpot {
 	}
 
 	public int getLevel() {
-		return fish.getLast().getLevel();
+		return fish.get(fish.size() - 1).getLevel();
 	}
 
 	public Animation getAnimation() {

@@ -1,0 +1,126 @@
+name: Android emulator test
+
+# Boots the APK on a real Android emulator, because nothing else tells us
+# whether the port actually runs. In particular it is the only way to find out
+# whether ART will load the java.awt shim -- the client's Loader extends
+# java.awt.Panel, and defining classes in a java.* package is a runtime
+# question no compiler or dexer answers.
+on:
+  workflow_dispatch:
+    inputs:
+      api-levels:
+        description: "JSON array of API levels to test, e.g. [26] or [26,34]"
+        required: false
+        default: "[26,34]"
+      with-cache:
+        description: "Download the real game cache from the latest release and bundle it (slow, ~1 GB)"
+        type: boolean
+        required: false
+        default: false
+  pull_request:
+    paths:
+      - "android/**"
+      - "darkan-client/**"
+      - "darkan-world-server/**"
+      - ".github/workflows/android-emulator.yml"
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - "darkan-client/**"
+      - "darkan-world-server/**"
+      - ".github/workflows/android-emulator.yml"
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      api-levels: ${{ steps.pick.outputs.api-levels }}
+    steps:
+      - id: pick
+        # Push builds test the minSdk floor only; a dispatch can ask for more.
+        run: echo "api-levels=${{ inputs.api-levels || '[26]' }}" >> "$GITHUB_OUTPUT"
+
+  emulator:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: ${{ fromJSON(needs.setup.outputs.api-levels) }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      # The runner ships with ~14 GB free; an 860 MB APK plus emulator images
+      # and Gradle intermediates is tight when the cache is bundled.
+      - name: Free disk space
+        if: inputs.with-cache
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc
+          df -h /
+
+      # The cache is not in git (see .gitignore) -- it ships inside the release
+      # bundles, so pull it back out of the newest one.
+      - name: Download the game cache
+        if: inputs.with-cache
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          asset=$(gh release view --json assets \
+            --jq '.assets[] | select(.name | endswith("-linux-x64.tar.gz")) | .name' | head -1)
+          echo "Downloading $asset"
+          gh release download --pattern "$asset" --output release.tar.gz
+          # The bundle lays out <root>/cache/main_file_cache.*  (see run.sh).
+          tar -xzf release.tar.gz --wildcards '*/cache/main_file_cache.*' --strip-components=2
+          rm release.tar.gz
+          mkdir -p darkan-cache
+          mv main_file_cache.* darkan-cache/
+          ls -la darkan-cache | head -5
+
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug \
+            ${{ inputs.with-cache && '' || '-Pdarkan.bundleCache=false' }}
+          ls -la app/build/outputs/apk/debug/
+
+      # Required for hardware acceleration on the ubuntu runners.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run on emulator (API ${{ matrix.api-level }})
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: x86_64
+          target: default
+          # Extra userdata room: the cache is extracted out of the APK on first
+          # launch, so a full run needs the ~840 MB twice.
+          emulator-options: >-
+            -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+            -no-snapshot -partition-size 4096
+          disable-animations: true
+          script: android/scripts/emulator-test.sh
+
+      - name: Upload logcat
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logcat-api${{ matrix.api-level }}
+          path: |
+            android/build/emulator-logs/**
+          if-no-files-found: warn

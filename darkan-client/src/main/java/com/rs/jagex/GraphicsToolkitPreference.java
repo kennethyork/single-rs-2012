@@ -15,12 +15,18 @@ public class GraphicsToolkitPreference extends Preference {
 
 	@Override
 	public int checkValid(int i_1) {
+		// Android has no OpenGL/DirectX native libraries; only the safe-mode
+		// JavaRenderer (toolkit 0) is usable there.
+		if (Boolean.getBoolean("darkan.android"))
+			return 0;
 		return i_1 == 3 && !LibraryLoader.getLoader().hasDxLibrary() ? 3 : 2;
 	}
 
 	@Override
 	int getDefaultValue() {
 		aBool7914 = true;
+		if (Boolean.getBoolean("darkan.android"))
+			return 0;
 		return 2;
 	}
 
@@ -31,7 +37,8 @@ public class GraphicsToolkitPreference extends Preference {
 	public void method12773() {
 		if (value < 0 || value > 5)
 			value = getDefaultValue();
-
+		if (Boolean.getBoolean("darkan.android"))
+			value = 0;
 	}
 
 	public boolean method12774() {
@@ -48,23 +55,23 @@ public class GraphicsToolkitPreference extends Preference {
 
 	void method7780(int i_1) {
 		aBool7914 = false;
-		value = i_1 * -754033619 * -859024475;
+		value = Boolean.getBoolean("darkan.android") ? 0 : i_1 * -754033619 * -859024475;
 	}
 
 	int method7786() {
 		aBool7914 = true;
-		return 2;
+		return Boolean.getBoolean("darkan.android") ? 0 : 2;
 	}
 
 	int method7787() {
 		aBool7914 = true;
-		return 2;
+		return Boolean.getBoolean("darkan.android") ? 0 : 2;
 	}
 
 	@Override
 	void setValue(int i_1) {
 		aBool7914 = false;
-		value = i_1;
+		value = Boolean.getBoolean("darkan.android") ? 0 : i_1;
 	}
 
 }

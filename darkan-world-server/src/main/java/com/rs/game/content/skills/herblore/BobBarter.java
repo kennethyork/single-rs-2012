@@ -87,7 +87,7 @@ public class BobBarter {
 			//Logger.debug("doses " + doses);
 			if (potionDoses.containsKey(potionName)) {
 				ArrayList<Integer> temp = potionDoses.get(potionName);
-				doses += temp.getFirst();
+				doses += temp.get(0);
 			}
 			ArrayList<Integer> qtyAndIds = new ArrayList<>();
 			qtyAndIds.add(doses);
@@ -103,7 +103,7 @@ public class BobBarter {
 		else
 			for (String name : potionDoses.keySet()) {
 				ArrayList<Integer> pot = potionDoses.get(name);
-				int totalDoses = pot.getFirst();
+				int totalDoses = pot.get(0);
 				int fullQty = totalDoses / dose;
 				int partialDose = totalDoses % dose;
 				//				Logger.debug("Making " + dose + " dose " + name + " potions.");

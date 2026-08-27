@@ -50,7 +50,7 @@ public class Recorder {
 		}
 		player.getPackets().sendDevConsoleMessage("Past actions for:  " + Utils.concat(displayNames));
 		SimpleEntry<String, RecordedAction> prev = null;
-		long startTime = actions.getFirst().getValue().getTimeLogged();
+		long startTime = actions.get(0).getValue().getTimeLogged();
 		for (SimpleEntry<String, RecordedAction> action : actions) {
 			consoleLogAction(player, action, prev, startTime);
 			prev = action;
@@ -77,13 +77,13 @@ public class Recorder {
 		List<SimpleEntry<String, RecordedAction>> initialActions = getActionsFor(displayNames);
 		if (initialActions == null || initialActions.isEmpty())
 			return;
-		long startTime = initialActions.getFirst().getValue().getTimeLogged();
+		long startTime = initialActions.get(0).getValue().getTimeLogged();
 		player.getPackets().sendDevConsoleMessage("Starting watch for: " + Arrays.toString(displayNames));
 		WorldTasks.scheduleTimer(tick -> {
 			if (player == null || !player.isRunning() || player.hasFinished())
 				return false;
 			List<SimpleEntry<String, RecordedAction>> actions = getActionsFor(displayNames);
-			player.getNSV().setO("lastWatchActionLogged", initialActions.getFirst());
+			player.getNSV().setO("lastWatchActionLogged", initialActions.get(0));
 			if (actions == null || actions.isEmpty() || player.getNSV().getB("stopWatchActionLoop")) {
 				player.getPackets().sendDevConsoleMessage("Watching stopped. Player went offline.");
 				player.getNSV().removeB("stopWatchActionLoop");

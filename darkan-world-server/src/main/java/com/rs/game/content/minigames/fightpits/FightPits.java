@@ -266,7 +266,7 @@ public final class FightPits {
 	public static void setChampion() {
 		if (arena.isEmpty())
 			return;
-		Player champion = arena.getFirst();
+		Player champion = arena.get(0);
 		currentChampion = champion.getDisplayName();
 		champion.getPackets().setIFText(373, 10, "Current Champion: JaLYt-Ket-" + currentChampion);
 		champion.setFightPitsSkull();

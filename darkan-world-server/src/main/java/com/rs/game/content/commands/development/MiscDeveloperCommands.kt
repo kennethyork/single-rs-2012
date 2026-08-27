@@ -32,8 +32,6 @@ import com.rs.lib.util.RSColor
 import com.rs.lib.util.Utils
 import com.rs.lib.util.reflect.ReflectionCheck
 import com.rs.plugin.annotations.ServerStartupEvent
-import com.rs.plugin.kts.PluginScriptHost
-import com.rs.plugin.kts.PluginScriptHost.Companion.loadAndExecuteScripts
 import com.rs.tools.MapSearcher
 import com.rs.tools.NPCDropDumper
 import com.rs.utils.DropSets
@@ -48,7 +46,11 @@ import java.io.IOException
 fun loadDeveloperCommands() {
     Commands.add(Rights.DEVELOPER, "reloadplugins", "legit test meme") { p, _ ->
         try {
-            loadAndExecuteScripts()
+            if (!System.getProperty("darkan.android", "false").toBoolean()) {
+                val host = Class.forName("com.rs.plugin.kts.PluginScriptHost")
+                val companion = host.getField("Companion").get(null)
+                companion.javaClass.getMethod("loadAndExecuteScripts").invoke(companion)
+            }
             p.sendMessage("Reloaded plugins successfully.")
         } catch (_: Throwable) {
             p.sendMessage("Error compiling plugins.")

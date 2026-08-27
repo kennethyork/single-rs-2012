@@ -234,10 +234,10 @@ public class Sap {
 				if (now - lastProc < DECAY_LOCKOUT || stackTimes.isEmpty())
 					continue;
 
-				if (now - lastDecay < DECAY_INTERVAL || now - stackTimes.getFirst() < DECAY_INTERVAL)
+				if (now - lastDecay < DECAY_INTERVAL || now - stackTimes.get(0) < DECAY_INTERVAL)
 					continue;
 
-				stackTimes.removeFirst();
+				stackTimes.remove(0);
 				int newStack = Math.max(0, drainMap.getOrDefault(attacker, 1) - 1);
 				drainMap.put(attacker, newStack);
 				decayMap.put(attacker, now);

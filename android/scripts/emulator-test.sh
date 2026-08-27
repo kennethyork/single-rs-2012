@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# Installs the debug APK on a running emulator, launches it, and reports how far
+# the port actually got. Run by .github/workflows/android-emulator.yml, which
+# supplies the emulator; ANDROID_SERIAL is already pointed at it.
+#
+# The port has never run on hardware, so this is deliberately diagnostic rather
+# than a pass/fail assertion suite: it prints the boot checkpoints that were
+# reached, and fails on a crash or on not reaching the first checkpoint.
+set -uo pipefail
+
+APK=android/app/build/outputs/apk/debug/app-debug.apk
+PKG=com.rs.single2012
+ACTIVITY="$PKG/com.rs.android.GameActivity"
+TAG=SingleRS
+LOG_DIR=android/build/emulator-logs
+# Cache extraction copies ~840 MB inside the emulator, which is slow.
+WATCH_SECONDS="${WATCH_SECONDS:-240}"
+
+mkdir -p "$LOG_DIR"
+
+echo "==> Installing $(du -h "$APK" | cut -f1) APK"
+if ! adb install -r -g "$APK"; then
+    echo "FAIL: the APK would not install."
+    exit 1
+fi
+
+adb logcat -c || true
+echo "==> Launching $ACTIVITY"
+adb shell am start -W -n "$ACTIVITY" || { echo "FAIL: activity would not start."; exit 1; }
+
+# Stream logcat to a file in the background so nothing is lost if the app dies.
+adb logcat -v time > "$LOG_DIR/logcat-full.txt" 2>&1 &
+LOGCAT_PID=$!
+# shellcheck disable=SC2064
+trap "kill $LOGCAT_PID 2>/dev/null || true" EXIT
+
+echo "==> Watching for up to ${WATCH_SECONDS}s"
+deadline=$((SECONDS + WATCH_SECONDS))
+while [ $SECONDS -lt $deadline ]; do
+    if grep -q "FATAL EXCEPTION" "$LOG_DIR/logcat-full.txt" 2>/dev/null; then
+        echo "==> Crash detected, stopping early."
+        break
+    fi
+    # Terminal checkpoints: no point waiting out the clock after either.
+    if grep -qE "$TAG.*(boot: client engine started|activity: game thread exited)" \
+        "$LOG_DIR/logcat-full.txt" 2>/dev/null; then
+        echo "==> Reached a terminal checkpoint, stopping early."
+        break
+    fi
+    sleep 5
+done
+
+sleep 2
+kill $LOGCAT_PID 2>/dev/null || true
+
+grep -E "$TAG|AndroidRuntime|System\.err|art  *:|dalvik" "$LOG_DIR/logcat-full.txt" \
+    > "$LOG_DIR/logcat-filtered.txt" 2>/dev/null || true
+
+echo
+echo "=================== boot checkpoints ==================="
+# Ordered; each line is emitted by GameActivity or AndroidLoader.
+checkpoints=(
+    "activity: onCreate"
+    "activity: java.awt shim loaded, Loader instantiated"
+    "boot: starting, android=true"
+    "boot: cache ready at"
+    "boot: starting client engine"
+    "boot: client engine started"
+)
+reached=0
+for cp in "${checkpoints[@]}"; do
+    if grep -qF "$cp" "$LOG_DIR/logcat-full.txt" 2>/dev/null; then
+        echo "  [reached] $cp"
+        reached=$((reached + 1))
+    else
+        echo "  [ missed] $cp"
+    fi
+done
+
+echo
+echo "=================== notable log lines =================="
+grep -E "FATAL EXCEPTION|VerifyError|ClassNotFoundException|NoClassDefFoundError|UnsatisfiedLinkError|Prohibited package|cache extraction failed|game thread died" \
+    "$LOG_DIR/logcat-full.txt" 2>/dev/null | head -40 || echo "  (none)"
+
+echo
+echo "=================== $TAG log ==========================="
+grep -F "$TAG" "$LOG_DIR/logcat-full.txt" 2>/dev/null | head -60 || echo "  (none)"
+
+echo
+echo "=================== stack traces ======================="
+grep -A30 "FATAL EXCEPTION" "$LOG_DIR/logcat-full.txt" 2>/dev/null | head -60 || true
+grep -A20 "game thread died" "$LOG_DIR/logcat-full.txt" 2>/dev/null | head -40 || true
+
+echo
+echo "=================== verdict ============================"
+status=0
+if grep -q "FATAL EXCEPTION" "$LOG_DIR/logcat-full.txt" 2>/dev/null; then
+    echo "FAIL: the app crashed with a fatal exception."
+    status=1
+elif [ "$reached" -eq 0 ]; then
+    echo "FAIL: the app never reached its first checkpoint -- it did not start."
+    status=1
+else
+    echo "Reached $reached of ${#checkpoints[@]} boot checkpoints without a fatal exception."
+    # Missing the java.awt checkpoint is the one result that matters most: it
+    # means ART rejected the shim, and the whole approach needs rethinking.
+    if ! grep -qF "java.awt shim loaded" "$LOG_DIR/logcat-full.txt" 2>/dev/null; then
+        echo "FAIL: the java.awt shim did not load -- ART would not accept the java.* classes."
+        status=1
+    fi
+fi
+echo "Full logcat saved to $LOG_DIR/logcat-full.txt"
+exit $status

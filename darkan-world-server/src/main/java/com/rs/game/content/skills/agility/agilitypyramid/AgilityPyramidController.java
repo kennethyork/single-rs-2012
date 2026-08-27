@@ -145,12 +145,12 @@ public class AgilityPyramidController extends Controller {
 		}
 
 		return switch (obstacle) {
-			case Obstacle.JUMP_ROLLER -> jumpRollerStages[virtualPlane - 1];
-			case Obstacle.CLIMB_OVER -> climbOverStages[virtualPlane - 1];
-			case Obstacle.JUMP_GAP -> jumpGapStages[virtualPlane - 1];
-			case Obstacle.SHIMMY_HANDHOLDS -> shimmyHandholdsStages[virtualPlane - 1];
-			case Obstacle.SHIMMY_SIDEWAYS -> shimmySidewaysStages[virtualPlane - 1];
-			case Obstacle.WALK_LOG -> walkLogStages[virtualPlane - 1];
+			case JUMP_ROLLER -> jumpRollerStages[virtualPlane - 1];
+			case CLIMB_OVER -> climbOverStages[virtualPlane - 1];
+			case JUMP_GAP -> jumpGapStages[virtualPlane - 1];
+			case SHIMMY_HANDHOLDS -> shimmyHandholdsStages[virtualPlane - 1];
+			case SHIMMY_SIDEWAYS -> shimmySidewaysStages[virtualPlane - 1];
+			case WALK_LOG -> walkLogStages[virtualPlane - 1];
 		};
 	}
 

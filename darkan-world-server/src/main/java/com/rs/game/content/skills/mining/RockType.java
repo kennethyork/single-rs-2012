@@ -74,7 +74,7 @@ public enum RockType {
 	}
 
 	public int getLevel() {
-		return ores.getLast().getLevel();
+		return ores.get(ores.size() - 1).getLevel();
 	}
 
 	public int getRespawnTime() {

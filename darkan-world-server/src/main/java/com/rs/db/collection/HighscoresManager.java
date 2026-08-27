@@ -87,7 +87,8 @@ public class HighscoresManager extends DBItemManager {
 				List<Highscore> scores = new ArrayList<>();
 				File[] files = directory.listFiles((dir, name) -> name.endsWith(".json"));
 				if (files != null) for (File file : files)
-					scores.add(JsonFileManager.fromJSONString(java.nio.file.Files.readString(file.toPath()), Highscore.class));
+					scores.add(JsonFileManager.fromJSONString(new String(java.nio.file.Files.readAllBytes(file.toPath()),
+							java.nio.charset.StandardCharsets.UTF_8), Highscore.class));
 				scores.sort(Comparator.comparingInt(Highscore::getTotalLevel).thenComparingLong(Highscore::getTotalXp).reversed());
 				top.accept(rank >= 0 && rank < scores.size() ? scores.get(rank) : null);
 			} catch (Throwable error) { top.accept(null); }

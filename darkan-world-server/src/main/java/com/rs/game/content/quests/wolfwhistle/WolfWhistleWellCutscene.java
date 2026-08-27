@@ -177,7 +177,7 @@ public class WolfWhistleWellCutscene extends Cutscene {
                 int[] range = new int[]{-1, -1, -1};
                 int iter = 0;
                 while (iter != 3) {
-                    int rand = random.nextInt(0, whiners.size());
+                    int rand = random.nextInt(whiners.size());
                     if (rand == range[0] || rand == range[1] || rand == range[2])
                         continue;
                     range[iter++] = rand;
@@ -238,7 +238,7 @@ public class WolfWhistleWellCutscene extends Cutscene {
 
     private String generateRandomWhine() {
         Random random = new Random();
-        return switch (random.nextInt(0, 10)) {
+        return switch (random.nextInt(10)) {
             case 0 -> "It makin' faces at me!";
             case 1 -> "It bigger den me!";
             case 2 -> "I didn't want to come 'ere anyway!";

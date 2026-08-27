@@ -12,7 +12,7 @@ private lateinit var executorService: ExecutorService
 private lateinit var executorCoroutineDispatcher: ExecutorCoroutineDispatcher
 
 fun main() {
-    executorService = Executors.newVirtualThreadPerTaskExecutor()
+    executorService = Executors.newCachedThreadPool()
     executorCoroutineDispatcher = executorService.asCoroutineDispatcher()
 
     for (i in 0..50)

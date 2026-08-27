@@ -1,0 +1,282 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android' version '2.2.0'
+}
+
+// Downgraded rs.darkan:core jar produced by the downgradeDarkanCore task below.
+def darkanCoreAndroidJar = layout.buildDirectory.file('darkan-core/core-android.jar')
+
+// The 2012 game cache is shipped inside the APK as assets/cache/. It is not in
+// git (see .gitignore) -- it comes with a release drop -- so the location is
+// overridable, and `-Pdarkan.bundleCache=false` builds a cache-less APK for
+// quick compile checks.
+def cacheSourceDir = file(project.findProperty('darkan.cacheDir') ?: "${rootDir}/../darkan-cache")
+def bundleCache = !(project.findProperty('darkan.bundleCache')?.toString()?.toLowerCase() in ['false', '0', 'no'])
+def cacheAssetsDir = layout.buildDirectory.dir('generated/cache-assets').get().asFile
+
+android {
+    namespace 'com.rs.android'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.rs.single2012"
+        // Android 8.0. Required by the world server's dependency stack:
+        // undertow-core (and MethodHandle.invoke generally) only dexes at 26+.
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "0.1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    lint {
+        abortOnError false
+    }
+
+    androidResources {
+        // main_file_cache.dat2 is ~840 MB of already-compressed archive data:
+        // deflating it costs minutes of build time for almost no saving, and
+        // storing it lets AssetManager stream it straight out of the APK.
+        noCompress.add('dat2')
+    }
+
+    // The server pulls in dozens of server-side jars (netty, undertow, mongo,
+    // guava, ...) that all ship the same metadata entries; none are meaningful
+    // inside an APK.
+    packaging {
+        resources {
+            excludes += [
+                    'META-INF/INDEX.LIST',
+                    'META-INF/DEPENDENCIES',
+                    'META-INF/MANIFEST.MF',
+                    'META-INF/LICENSE',
+                    'META-INF/LICENSE.txt',
+                    'META-INF/LICENSE.md',
+                    'META-INF/NOTICE',
+                    'META-INF/NOTICE.txt',
+                    'META-INF/NOTICE.md',
+                    'META-INF/*.SF',
+                    'META-INF/*.DSA',
+                    'META-INF/*.RSA',
+                    'META-INF/versions/**',
+                    'META-INF/io.netty.versions.properties',
+                    'META-INF/native-image/**',
+                    'META-INF/proguard/**',
+                    'module-info.class',
+                    '**/module-info.class',
+            ]
+        }
+    }
+
+    sourceSets {
+        main {
+            java {
+                srcDir 'src/main/java'
+                srcDir "${rootDir}/../darkan-world-server/src/main/java"
+                srcDir "${rootDir}/../darkan-client/src/main/java"
+
+                // IMPORTANT: a source set's exclude patterns are matched against
+                // every srcDir above, relative to each root. Plain patterns like
+                // 'com/rs/jagex/Class191.java' therefore also drop the Android
+                // replacement in src/main/java, which is why the upstream class
+                // then fails to resolve. Scope each exclusion to one tree.
+                exclude { element ->
+                    def abs = element.file.absolutePath.replace('\\', '/')
+                    def rel = element.path
+                    def client = abs.contains('/darkan-client/src/main/java/')
+                    def server = abs.contains('/darkan-world-server/src/main/java/')
+
+                    // Desktop client classes with Android replacements in
+                    // src/main/java (Swing file chooser / file filter).
+                    if (client && rel in ['com/rs/jagex/Class191.java',
+                                          'com/rs/jagex/FileFilter_Sub1.java',
+                                          'com/rs/jagex/Class253_Sub1.java'])
+                        return true
+
+                    // The only dev tools Android cannot build: map dumpers
+                    // that need javax.imageio + java.awt.color. The rest of
+                    // com.rs.tools stays -- MiscDeveloperCommands.kt calls into
+                    // MapSearcher/NPCDropDumper and NPC.java into
+                    // com.rs.tools.old.CharmDrop, so dropping the package
+                    // wholesale would leave dangling references at dex time.
+                    if (server && rel in ['com/rs/tools/MapImageDumper.java',
+                                          'com/rs/tools/old/MapDump.java',
+                                          'com/rs/tools/old/MapGenerator.java',
+                                          'com/rs/utils/BigBufferedImage.java'])
+                        return true
+
+                    // JMH benchmarks (dev-only, virtual threads).
+                    return rel.startsWith('com/rs/utils/bench/')
+                }
+            }
+            kotlin {
+                srcDir "${rootDir}/../darkan-world-server/src/main/kotlin"
+                // Dev-only benchmark using virtual threads (not on Android).
+                exclude 'com/rs/utils/bench/**'
+                // Kotlin-only exclusions live on the KotlinCompile task
+                // below -- SourceDirectorySet filters set here are not applied
+                // to it.
+            }
+            res.srcDirs = ['src/main/res']
+            // cacheAssetsDir is produced by stageCacheAssets below.
+            assets.srcDirs = ['src/main/assets', cacheAssetsDir]
+        }
+    }
+}
+
+// Kotlin mangles `internal` members as name$moduleName, and world-server Java
+// sources call them by that exact name (e.g. Bank.java calls
+// Potion.drink$world_server). The Android Kotlin plugin would name this module
+// "app_debug"/"app_release", so pin it to the upstream Gradle project name.
+// Set on the task rather than via kotlinOptions.moduleName, which the Android
+// plugin still suffixes with the variant name.
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    compilerOptions.moduleName.set('world-server')
+
+    // The .kts plugin script host. PluginManager and MiscDeveloperCommands
+    // already reach it reflectively and skip it when darkan.android=true,
+    // because hosting the Kotlin compiler on ART is not possible. Excluding it
+    // lets the kotlin-scripting/compiler-embeddable dependencies go too -- they
+    // are ~100MB and only dex at minSdk 26+. PluginGlobals.kt stays: it is
+    // plain event registration that hundreds of content files import.
+    exclude '**/com/rs/plugin/kts/PluginScript.kt'
+    exclude '**/com/rs/plugin/kts/PluginScriptConfiguration.kt'
+    exclude '**/com/rs/plugin/kts/PluginScriptHost.kt'
+    // JMH benchmarks (dev-only, virtual threads), matching the Java exclusion.
+    exclude '**/com/rs/utils/bench/**'
+}
+
+dependencies {
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+    // World server dependencies (in-process single-player, like Single-RSC).
+    implementation 'com.google.guava:guava:33.4.0-jre'
+    implementation 'io.netty:netty-all:4.1.117.Final'
+    implementation 'io.undertow:undertow-core:2.3.18.Final'
+    implementation 'it.unimi.dsi:fastutil:8.5.15'
+    implementation 'com.trivago:fastutil-concurrent-wrapper:0.2.2'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:2.2.0'
+    // No kotlin-scripting-*: the .kts plugin host is excluded above.
+
+    // rs.darkan:core is resolved from the GitLab Maven registry (see
+    // settings.gradle) but is published as Java 24 bytecode, which neither
+    // JDK 21 javac nor D8 can read -- so we consume a version-downgraded copy
+    // (see downgradeDarkanCore below) instead of the published jar.
+    implementation files(darkanCoreAndroidJar) { builtBy 'downgradeDarkanCore' }
+
+    // Transitive dependencies of rs.darkan:core. They come for free on desktop
+    // via its Gradle metadata; the file dependency above carries no metadata,
+    // so the ones its classes actually reference are declared explicitly here.
+    // (gson / guava / netty / undertow / kotlin-stdlib are already above.)
+    implementation 'org.mongodb:mongodb-driver-sync:5.3.1'
+    implementation 'de.mkammerer:argon2-jvm:2.12'
+}
+
+// ---------------------------------------------------------------------------
+// Game cache bundling
+// ---------------------------------------------------------------------------
+// NOTE: this is a plain task rather than a Sync. A Copy/Sync with no matching
+// source is skipped as NO-SOURCE, which would silently swallow the missing-cache
+// check below and skip the manifest generation.
+tasks.register('stageCacheAssets') {
+    description = 'Stages the 2012 game cache into assets/cache/ so it ships inside the APK.'
+
+    def stagedDir = new File(cacheAssetsDir, 'cache')
+    def sourceDir = cacheSourceDir
+    def bundle = bundleCache
+    // Just the cache itself. The .dll files sitting alongside it are Windows
+    // natives for the hardware renderers, which Android forces off.
+    def cacheFiles = ['main_file_cache.dat2', 'main_file_cache.idx*']
+
+    inputs.property('bundleCache', bundle)
+    inputs.files(fileTree(sourceDir) { tree -> tree.include cacheFiles })
+            .withPropertyName('gameCache')
+    outputs.dir(stagedDir).withPropertyName('stagedCache')
+
+    doLast {
+        if (!bundle) {
+            delete stagedDir
+            stagedDir.mkdirs()
+            logger.lifecycle('stageCacheAssets: skipped (-Pdarkan.bundleCache=false); ' +
+                    'the APK will not be able to start a world.')
+            return
+        }
+        if (!new File(sourceDir, 'main_file_cache.dat2').isFile())
+            throw new GradleException(
+                    "The game cache is missing from ${sourceDir}.\n" +
+                    "It ships with a release drop rather than in git. Point at it with\n" +
+                    "  -Pdarkan.cacheDir=/path/to/darkan-cache\n" +
+                    "or build a cache-less APK (it cannot start a world) with\n" +
+                    "  -Pdarkan.bundleCache=false")
+
+        // Explicit spec parameters: inside a task action the closure owner is
+        // the task, so an implicit-delegate `from(...)` resolves against
+        // DefaultTask and fails.
+        project.sync { spec ->
+            spec.from(sourceDir) { tree -> tree.include cacheFiles }
+            spec.into stagedDir
+        }
+
+        // A manifest of name/size lets the on-device extractor show real
+        // progress, verify each file landed intact, and re-extract automatically
+        // whenever the bundled cache changes.
+        def staged = stagedDir.listFiles().findAll { it.isFile() }.sort { it.name }
+        def manifest = staged.collect { "${it.name}\t${it.length()}" }.join('\n') + '\n'
+        new File(stagedDir, 'manifest.txt').text = manifest
+        logger.lifecycle("stageCacheAssets: staged ${staged.size()} cache files " +
+                "(${staged*.length().sum(0L).intdiv(1048576)} MB)")
+    }
+}
+
+// AGP's asset merge reads the srcDirs above, so it has to wait for the staging.
+tasks.matching { it.name ==~ /(generate|merge)\w*Assets/ }.configureEach {
+    dependsOn 'stageCacheAssets'
+}
+
+// ---------------------------------------------------------------------------
+// rs.darkan:core bytecode downgrade
+// ---------------------------------------------------------------------------
+apply from: "${rootDir}/tools/downgrade-bytecode.gradle"
+
+configurations {
+    darkanCorePublished {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
+}
+
+dependencies {
+    // '@jar' = artifact-only notation: fetch the jar, ignore module metadata.
+    darkanCorePublished 'rs.darkan:core:2.0.6@jar'
+}
+
+tasks.register('downgradeDarkanCore') {
+    description = 'Rewrites rs.darkan:core from Java 24 bytecode to Java 17 so javac and D8 can read it.'
+    def published = configurations.darkanCorePublished
+    def target = darkanCoreAndroidJar
+    inputs.files(published).withPropertyName('published')
+    outputs.file(target).withPropertyName('downgraded')
+    doLast {
+        // 61 = Java 17, matching compileOptions/kotlinOptions above.
+        downgradeJar(published.singleFile, target.get().asFile, 61)
+    }
+}
+

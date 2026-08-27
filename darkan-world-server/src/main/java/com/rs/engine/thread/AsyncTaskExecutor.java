@@ -35,11 +35,21 @@ public final class AsyncTaskExecutor {
 	private static ScheduledExecutorService WORLD_THREAD_EXECUTOR;
 	private static ScheduledExecutorService ASYNC_VTHREAD_EXECUTOR;
 	private static final List<Future<?>> PENDING_FUTURES = new ObjectArrayList<>();
+	/**
+	 * Daemon platform threads rather than Thread.ofVirtual(): Android has no
+	 * virtual threads. Matches the substitution in AsyncTaskScheduler.
+	 */
+	private static final java.util.concurrent.atomic.AtomicLong ASYNC_THREAD_COUNT = new java.util.concurrent.atomic.AtomicLong();
+	private static final ThreadFactory ASYNC_THREAD_FACTORY = runnable -> {
+		Thread thread = new Thread(runnable, "Async-" + ASYNC_THREAD_COUNT.getAndIncrement());
+		thread.setDaemon(true);
+		return thread;
+	};
 
 	public static void initExecutors() {
 		Logger.info(AsyncTaskExecutor.class, "startThreads", "Initializing world threads...");
 		WORLD_THREAD_EXECUTOR = Executors.newSingleThreadScheduledExecutor(new WorldThreadFactory());
-		ASYNC_VTHREAD_EXECUTOR = Executors.newScheduledThreadPool(16, Thread.ofVirtual().factory());
+		ASYNC_VTHREAD_EXECUTOR = Executors.newScheduledThreadPool(16, ASYNC_THREAD_FACTORY);
 	}
 
 	public static void execute(Runnable command) {

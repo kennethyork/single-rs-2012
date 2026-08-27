@@ -1,0 +1,47 @@
+// Rewrites the class-file major version of every .class in a jar down to a
+// target the Android toolchain can read.
+//
+// Why this exists: rs.darkan:core is published as Java 24 bytecode (class file
+// major 68). The Android build compiles with JDK 21 javac (reads <= 65) and
+// D8/AGP 8.5 only accepts Java 17 bytecode (61), so the jar is unreadable as
+// published and every import of it fails with "cannot access X / bad class
+// file ... wrong version 68.0".
+//
+// The jar contains no post-17 bytecode constructs (verified: no
+// java.lang.runtime.SwitchBootstraps, no preview attributes -- only records,
+// which are class 60+ and are desugared by D8), so a pure version-header
+// rewrite is sufficient and lossless here.
+ext.downgradeJar = { java.io.File input, java.io.File output, int targetMajor ->
+    output.parentFile.mkdirs()
+    def rewritten = 0
+    new java.util.zip.ZipFile(input).withCloseable { zip ->
+        new java.util.zip.ZipOutputStream(new FileOutputStream(output)).withCloseable { out ->
+            zip.entries().each { entry ->
+                if (entry.directory) return
+                byte[] bytes = zip.getInputStream(entry).bytes
+                if (entry.name.endsWith('.class') && bytes.length > 8) {
+                    int major = ((bytes[6] & 0xFF) << 8) | (bytes[7] & 0xFF)
+                    if (major > targetMajor) {
+                        bytes[6] = (byte) ((targetMajor >> 8) & 0xFF)
+                        bytes[7] = (byte) (targetMajor & 0xFF)
+                        // Java 24 javac still emits a 0 minor for non-preview
+                        // classes; assert it so a preview build fails loudly
+                        // instead of silently producing broken bytecode.
+                        int minor = ((bytes[4] & 0xFF) << 8) | (bytes[5] & 0xFF)
+                        if (minor != 0) {
+                            throw new GradleException("${input.name}!${entry.name} is preview bytecode " +
+                                    "(minor=${minor}); it cannot be downgraded by a header rewrite.")
+                        }
+                        rewritten++
+                    }
+                }
+                def copy = new java.util.zip.ZipEntry(entry.name)
+                copy.time = 0L
+                out.putNextEntry(copy)
+                out.write(bytes)
+                out.closeEntry()
+            }
+        }
+    }
+    logger.lifecycle("downgradeJar: ${input.name} -> ${output.name} (${rewritten} classes capped at major ${targetMajor})")
+}

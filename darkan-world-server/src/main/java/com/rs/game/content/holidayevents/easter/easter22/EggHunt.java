@@ -114,7 +114,7 @@ public class EggHunt {
     	active = true;
     	hunt++;
     	while (eggs.size() > 0)
-    		eggs.removeFirst();
+    		eggs.remove(0);
         while (eggs.size() < 5) {
         	Spawns spawn = Spawns.values()[Utils.random(EggHunt.Spawns.values().length)];
             if (!eggs.contains(spawn.ordinal())) {
@@ -163,7 +163,7 @@ public class EggHunt {
     }
     
     public static String getHint() {
-    	return Spawns.values()[eggs.getFirst()].getEgg().getHint();
+    	return Spawns.values()[eggs.get(0)].getEgg().getHint();
     }
     
     public static int getTime() {

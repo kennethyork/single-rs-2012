@@ -77,9 +77,11 @@ class AsyncTaskScheduler {
     companion object {
         const val TASK_TIMEOUT_MS = 5000L
 
-        private val ISOLATION_EXECUTOR: ExecutorService = Executors.newThreadPerTaskExecutor(
-            Thread.ofVirtual().name("ScheduledTask-Isolation-", 0).factory()
-        )
+        private val counter = java.util.concurrent.atomic.AtomicLong(0L)
+
+        private val ISOLATION_EXECUTOR: ExecutorService = Executors.newCachedThreadPool { r ->
+            Thread(r, "ScheduledTask-Isolation-${counter.getAndIncrement()}").apply { isDaemon = true }
+        }
 
         private fun runIsolated(task: ScheduledTask, phase: String, block: () -> Unit): Boolean {
             val future = ISOLATION_EXECUTOR.submit(block)

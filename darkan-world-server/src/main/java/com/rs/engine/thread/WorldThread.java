@@ -30,8 +30,6 @@ import com.rs.lib.web.APIUtil;
 import com.rs.utils.Timer;
 import com.rs.utils.WorldUtil;
 import com.rs.web.Telemetry;
-import jdk.jfr.Configuration;
-import jdk.jfr.Recording;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.Request;
@@ -40,11 +38,7 @@ import okhttp3.RequestBody;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryUsage;
 import java.nio.file.Paths;
-import java.text.ParseException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -72,26 +66,28 @@ public final class WorldThread extends Thread {
 
 	@Override
 	public void run() {
-		Configuration config = null;
-		if (Settings.getConfig().isEnableJFR()) {
+		// JFR is reached reflectively via TickRecorder so these sources also
+		// compile for Android, whose runtime has no jdk.jfr module.
+		boolean jfrEnabled = Settings.getConfig().isEnableJFR();
+		if (jfrEnabled && !TickRecorder.isSupported()) {
+			Logger.warn(WorldThread.class, "run", "JFR is enabled in the config but jdk.jfr is unavailable on this runtime; tick recording is disabled.");
+			jfrEnabled = false;
+		}
+		TickRecorder recorder = null;
+		if (jfrEnabled) {
 			try {
-				config = Configuration.create(Paths.get("./darkan.jfc"));
-			} catch (IOException | ParseException e) {
+				recorder = TickRecorder.load(Paths.get("./darkan.jfc"));
+			} catch (IOException e) {
 				Logger.handle(WorldThread.class, "run", e);
 				throw new RuntimeException(e);
-			}
-			if (config == null) {
-				RuntimeException e = new RuntimeException("Unable to load darkan flight recorder template.");
-				Logger.handle(WorldThread.class, "run", e);
-				throw e;
 			}
 		}
 		Logger.debug(WorldThread.class, "run", "WorldThread initialized...");
 		while(true) {
 			long startTime = System.currentTimeMillis();
-			Recording tickRecording = Settings.getConfig().isEnableJFR() ? new Recording(config) : null;
+			TickRecorder.Recording tickRecording = recorder != null ? recorder.newRecording() : null;
 			try {
-				if (Settings.getConfig().isEnableJFR()) {
+				if (tickRecording != null) {
 					Timer timerJFR = new Timer().start();
 					tickRecording.start();
 					Logger.trace(WorldThread.class, "tick", "JFR recording() - " + timerJFR.stop());
@@ -229,7 +225,7 @@ public final class WorldThread extends Thread {
                 long AVERAGE_TICK = TOTAL_TIME / TICKS;
 
 				if (time > 300L && Settings.getConfig().getStaffWebhookUrl() != null) {
-					if (Settings.getConfig().isEnableJFR())
+					if (tickRecording != null)
 						tickRecording.stop();
 					StringBuilder content = new StringBuilder();
 					content.append("__**Tick concern**__\n");
@@ -259,26 +255,18 @@ public final class WorldThread extends Thread {
 					/**
 					 * Memory and CPU usage stats
 					 */
-					MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
-					MemoryUsage heapMemoryUsage = memoryMXBean.getHeapMemoryUsage();
-					MemoryUsage nonHeapMemoryUsage = memoryMXBean.getNonHeapMemoryUsage();
-
-					long jvmHeapUsed = heapMemoryUsage.getUsed() / 1048576L; // in MB
-					long jvmNonHeapUsed = nonHeapMemoryUsage.getUsed() / 1048576L; // in MB
-					long jvmTotalUsed = jvmHeapUsed + jvmNonHeapUsed;
-
-					long jvmMaxMemory = (heapMemoryUsage.getMax() + nonHeapMemoryUsage.getMax()) / 1048576L; // in MB
-					double jvmMemUsedPerc = ((double) jvmTotalUsed / jvmMaxMemory) * 100.0;
+					long jvmTotalUsed = WorldUtil.getMemUsedMb();
+					long jvmMaxMemory = WorldUtil.getMemMaxMb();
+					double jvmMemUsedPerc = WorldUtil.getMemUsedPerc();
 					content.append("Total JVM memory usage: ").append(Utils.formatLong(jvmTotalUsed)).append("mb/").append(Utils.formatLong(jvmMaxMemory)).append("mb (").append(Utils.formatDouble(jvmMemUsedPerc)).append("%)\n");
 					content.append("```\n");
 					MultipartBody.Builder builder = new MultipartBody.Builder()
 							.setType(MultipartBody.FORM)
 							.addFormDataPart("content", content.toString());
 
-					if (Settings.getConfig().isEnableJFR()) {
+					if (tickRecording != null) {
 						ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                        assert tickRecording != null;
-                        try (InputStream is = tickRecording.getStream(null, null)) {
+                        try (InputStream is = tickRecording.getStream()) {
 							byte[] buffer = new byte[1024];
 							int len;
 							while ((len = is.read(buffer)) > -1) {

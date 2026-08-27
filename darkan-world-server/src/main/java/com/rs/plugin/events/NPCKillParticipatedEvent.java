@@ -55,7 +55,7 @@ public class NPCKillParticipatedEvent implements PluginEvent {
 
     public static void registerMethod(Class<?> eventType, PluginHandler<? extends PluginEvent> method) {
         for (Object key : method.keys()) {
-            List<PluginHandler<? extends PluginEvent>> methods = HANDLERS.computeIfAbsent(key, _ -> new ArrayList<>());
+            List<PluginHandler<? extends PluginEvent>> methods = HANDLERS.computeIfAbsent(key, k -> new ArrayList<>());
             methods.add(method);
         }
     }

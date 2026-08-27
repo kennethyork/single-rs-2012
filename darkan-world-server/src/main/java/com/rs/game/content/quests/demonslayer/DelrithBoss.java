@@ -45,7 +45,7 @@ public class DelrithBoss extends NPC {
 
 	public DelrithBoss(Tile tile) {
 		super(DELRITH_ID, tile, true);
-		p = World.getPlayersInChunkRange(getChunkId(), 2).getFirst();
+		p = World.getPlayersInChunkRange(getChunkId(), 2).get(0);
 	}
 
 	@Override

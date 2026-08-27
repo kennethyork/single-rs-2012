@@ -29,23 +29,20 @@ import java.util.function.Consumer;
 public class WorldProjectile extends Projectile {
 
 	public WorldProjectile(Object from, Object to, int spotAnimId, int startHeight, int endHeight, int startDelayClientCycles, int inAirClientCycles, int offset, int angle, Consumer<WorldProjectile> task) {
-		super(switch(from) {
-			case Tile t -> t;
-			case Entity e -> e.getMiddleTile();
-			case GameObject g -> g.getTile();
-			default -> throw new IllegalArgumentException("Unexpected value: " + from);
-		}, from instanceof Entity e ? e.getIndex() : -1, switch(to) {
-			case Tile t -> t;
-			case Entity e -> e.getMiddleTile();
-			case GameObject g -> g.getTile();
-			default -> throw new IllegalArgumentException("Unexpected value: " + to);
-		}, to instanceof Entity e ? e.getIndex() : -1, spotAnimId, startHeight, endHeight, startDelayClientCycles, inAirClientCycles, offset, angle);
+		super(tileOf(from), from instanceof Entity e ? e.getIndex() : -1, tileOf(to), to instanceof Entity e ? e.getIndex() : -1, spotAnimId, startHeight, endHeight, startDelayClientCycles, inAirClientCycles, offset, angle);
 		Entity fromE = from instanceof Entity e ? e : null;
 		sourceId = fromE == null ? 0 : (fromE instanceof Player ? -(fromE.getIndex() + 1) : fromE.getIndex() + 1);
 		Entity toE = to instanceof Entity e ? e : null;
 		lockOnId = toE == null ? 0 : (toE instanceof Player ? -(toE.getIndex() + 1) : toE.getIndex() + 1);
 		if (task != null)
 			WorldTasks.schedule(getTaskDelay(), () -> task.accept(WorldProjectile.this));
+	}
+
+	private static Tile tileOf(Object o) {
+		if (o instanceof Tile t) return t;
+		if (o instanceof Entity e) return e.getMiddleTile();
+		if (o instanceof GameObject g) return g.getTile();
+		throw new IllegalArgumentException("Unexpected value: " + o);
 	}
 
 	public int getTaskDelay() {

@@ -20,6 +20,7 @@ import com.rs.cache.loaders.ItemDefinitions;
 import com.rs.engine.dialogue.Dialogue;
 import com.rs.engine.quest.Quest;
 import com.rs.game.content.combat.CombatDefinitions;
+import com.rs.game.content.skills.summoning.Pouch;
 import com.rs.game.model.entity.player.Equipment;
 import com.rs.game.model.entity.player.Player;
 import com.rs.game.model.entity.player.Skills;
@@ -271,7 +272,7 @@ public class Runecrafting {
 			List<Item> rune = chances.genDrop();
 			if (rune.isEmpty())
 				return ZMIRune.AIR;
-			return BY_ID.get(rune.getFirst().getId());
+			return BY_ID.get(rune.get(0).getId());
 		}
 
 		ZMIRune(double xp, int id, double[] chances) {
@@ -315,12 +316,10 @@ public class Runecrafting {
 				player.getPouches()[pouch] = 0;
 			}
 		}
-		switch (player.getFamiliarPouch()) {
-			case ABYSSAL_PARASITE, ABYSSAL_LURKER, ABYSSAL_TITAN -> {
-				runes += player.getFamiliar().getInventory().getNumberOf(PURE_ESS);
-				player.getFamiliar().getInventory().removeAll(PURE_ESS);
-			}
-			case null, default -> {}
+		Pouch familiarPouch = player.getFamiliarPouch();
+		if (familiarPouch == Pouch.ABYSSAL_PARASITE || familiarPouch == Pouch.ABYSSAL_LURKER || familiarPouch == Pouch.ABYSSAL_TITAN) {
+			runes += player.getFamiliar().getInventory().getNumberOf(PURE_ESS);
+			player.getFamiliar().getInventory().removeAll(PURE_ESS);
 		}
 
 		for (int i = 0; i < RCRune.values().length; i++) {
@@ -381,18 +380,16 @@ public class Runecrafting {
 					player.getPouches()[pouch] = 0;
 				}
 			}
-			switch (player.getFamiliarPouch()) {
-				case ABYSSAL_PARASITE, ABYSSAL_LURKER, ABYSSAL_TITAN -> {
-					if (!rune.pureEss) {
-						runes += player.getFamiliar().getInventory().getUsedSlots();
-						player.getFamiliar().getInventory().removeAll(RUNE_ESS);
-						player.getFamiliar().getInventory().removeAll(PURE_ESS);
-					} else {
-						runes += player.getFamiliar().getInventory().getNumberOf(PURE_ESS);
-						player.getFamiliar().getInventory().removeAll(PURE_ESS);
-					}
+			Pouch familiarPouch2 = player.getFamiliarPouch();
+			if (familiarPouch2 == Pouch.ABYSSAL_PARASITE || familiarPouch2 == Pouch.ABYSSAL_LURKER || familiarPouch2 == Pouch.ABYSSAL_TITAN) {
+				if (!rune.pureEss) {
+					runes += player.getFamiliar().getInventory().getUsedSlots();
+					player.getFamiliar().getInventory().removeAll(RUNE_ESS);
+					player.getFamiliar().getInventory().removeAll(PURE_ESS);
+				} else {
+					runes += player.getFamiliar().getInventory().getNumberOf(PURE_ESS);
+					player.getFamiliar().getInventory().removeAll(PURE_ESS);
 				}
-				case null, default -> {}
 			}
 		}
 

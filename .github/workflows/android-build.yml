@@ -1,0 +1,40 @@
+name: Android build
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "android/**"
+      - "darkan-client/**"
+      - "darkan-world-server/**"
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Grant execute permission for gradlew
+        working-directory: android
+        run: chmod +x gradlew
+      # The ~840 MB game cache is not in git (see .gitignore) -- it ships with a
+      # release drop -- so CI builds a cache-less APK. It verifies that the
+      # client and world server compile, dex, and package; it cannot start a
+      # world, and is not a releasable artifact.
+      - name: Build debug APK (without the game cache)
+        working-directory: android
+        run: ./gradlew :app:assembleDebug -Pdarkan.bundleCache=false
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: single-rs-2012-debug-apk-no-cache
+          path: android/app/build/outputs/apk/debug/*.apk

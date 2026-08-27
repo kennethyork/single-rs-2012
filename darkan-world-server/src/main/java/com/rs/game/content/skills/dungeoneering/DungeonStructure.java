@@ -196,7 +196,7 @@ public class DungeonStructure {
 		candidates.removeAll(children);
 		if (!candidates.isEmpty()) {
 			RoomNode lockRoom = random(candidates);
-			keyRoom.key = availableKeys.removeFirst();
+			keyRoom.key = availableKeys.remove(0);
 			lockRoom.lock = keyRoom.key;
 
 		}

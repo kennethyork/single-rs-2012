@@ -280,10 +280,10 @@ public class Leech {
 
 				if (now - lastProc < INACTIVITY_TIMEOUT || stackTimes.isEmpty())
 					continue;
-				if (now - lastDecay < LEECH_DECAY_TIME  || now - stackTimes.getFirst() < LEECH_DECAY_TIME)
+				if (now - lastDecay < LEECH_DECAY_TIME  || now - stackTimes.get(0) < LEECH_DECAY_TIME)
 					continue;
 
-				stackTimes.removeFirst();
+				stackTimes.remove(0);
 				int newStack = Math.max(0, drainMap.getOrDefault(attacker, 1) - 1);
 				drainMap.put(attacker, newStack);
 				decayMap.put(attacker, now);
@@ -327,10 +327,10 @@ public class Leech {
 			if (now - lastProc < INACTIVITY_TIMEOUT)
 				continue;
 
-			if (now - lastDecay < LEECH_DECAY_TIME || now - stackTimes.getFirst() < LEECH_DECAY_TIME)
+			if (now - lastDecay < LEECH_DECAY_TIME || now - stackTimes.get(0) < LEECH_DECAY_TIME)
 				continue;
 
-			stackTimes.removeFirst();
+			stackTimes.remove(0);
 			int currentStacks = player.getTempAttribs().getI(boostKey, 1) - 1;
 			//System.out.println("Current Boosts on player: " + currentStacks + "/");
 			if (currentStacks <= 0 || stackTimes.isEmpty()) {

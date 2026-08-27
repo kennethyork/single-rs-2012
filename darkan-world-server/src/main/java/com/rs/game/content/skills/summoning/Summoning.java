@@ -192,8 +192,8 @@ public class Summoning {
 			player.sendMessage("You do not have the pouch required to create this scroll.");
 			return;
 		}
-		if (player.getSkills().getLevelForXp(Constants.SUMMONING) < scroll.fromPouches().getFirst().getLevel()) {
-			player.sendMessage("You need a summoning level of " + scroll.fromPouches().getFirst().getLevel() + " to create " + amount + " " + ItemDefinitions.getDefs(scroll.getId()).getName().toLowerCase() + "s.");
+		if (player.getSkills().getLevelForXp(Constants.SUMMONING) < scroll.fromPouches().get(0).getLevel()) {
+			player.sendMessage("You need a summoning level of " + scroll.fromPouches().get(0).getLevel() + " to create " + amount + " " + ItemDefinitions.getDefs(scroll.getId()).getName().toLowerCase() + "s.");
 			return;
 		}
 		boolean hasReqs = false;

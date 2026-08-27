@@ -58,8 +58,24 @@ public class Class158_Sub2_Sub3_Sub1 extends Class158_Sub2_Sub3 {
 	@Override
 	public int method14353(int i_1, int i_2) {
 		Graphics graphics_3 = canvas.getGraphics();
-		graphics_3.drawImage(anImage10450, i_1, i_2, canvas);
+		if (graphics_3 != null)
+			graphics_3.drawImage(anImage10450, i_1, i_2, canvas);
+		presentToAndroid();
 		return 0;
+	}
+
+	/**
+	 * Forwards the rendered frame to the Android surface when present. Uses
+	 * reflection so the shared client source also builds for the desktop target,
+	 * where com.rs.android does not exist.
+	 */
+	private void presentToAndroid() {
+		try {
+			Class<?> loader = Class.forName("com.rs.android.AndroidLoader");
+			loader.getMethod("presentFrame", int[].class, int.class, int.class)
+					.invoke(null, anIntArray10240, width, height);
+		} catch (Throwable ignored) {
+		}
 	}
 
 	@Override

@@ -34,9 +34,6 @@ import com.rs.lib.util.Vec2;
 import com.rs.lib.web.dto.FCData;
 import kotlin.Pair;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryUsage;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -183,18 +180,26 @@ public class WorldUtil {
 		return true;
 	}
 
+	/*
+	 * Memory reporting goes through java.lang.Runtime rather than
+	 * java.lang.management: Android has no java.lang.management package, and the
+	 * same server sources are compiled for both targets. Runtime reports the heap
+	 * only, so these numbers exclude the non-heap usage the MemoryMXBean added.
+	 */
+
+	/** Heap currently in use, in MB. */
+	public static long getMemUsedMb() {
+		Runtime runtime = Runtime.getRuntime();
+		return (runtime.totalMemory() - runtime.freeMemory()) / 1048576L;
+	}
+
+	/** Maximum heap this process may grow to, in MB. */
+	public static long getMemMaxMb() {
+		return Runtime.getRuntime().maxMemory() / 1048576L;
+	}
+
 	public static double getMemUsedPerc() {
-		MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
-		MemoryUsage heapMemoryUsage = memoryMXBean.getHeapMemoryUsage();
-		MemoryUsage nonHeapMemoryUsage = memoryMXBean.getNonHeapMemoryUsage();
-
-		long jvmHeapUsed = heapMemoryUsage.getUsed() / 1048576L; // in MB
-		long jvmNonHeapUsed = nonHeapMemoryUsage.getUsed() / 1048576L; // in MB
-		long jvmTotalUsed = jvmHeapUsed + jvmNonHeapUsed;
-
-		long jvmMaxMemory = (heapMemoryUsage.getMax() + nonHeapMemoryUsage.getMax()) / 1048576L; // in MB
-		double jvmMemUsedPerc = ((double) jvmTotalUsed / jvmMaxMemory) * 100.0;
-		return jvmMemUsedPerc;
+		return ((double) getMemUsedMb() / getMemMaxMb()) * 100.0;
 	}
 
 	public static ItemsContainer<Item> gsonTreeMapToItemContainer(Object metadata) {

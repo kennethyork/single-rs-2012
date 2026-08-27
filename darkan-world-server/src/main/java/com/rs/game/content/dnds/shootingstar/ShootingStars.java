@@ -98,7 +98,7 @@ public class ShootingStars {
     public static void viewTelescope(Player player) {
         player.getInterfaceManager().sendInterface(782);
         player.startConversation(new Dialogue());
-        player.simpleDialogue((currentStar != null ? "A star recently crashed near " + currentStar.location.description + "! " : "") + "The next star looks like it's going to land near " + (!locIterator.hasNext() ? LOCATIONS.getFirst() : locIterator.peek()).description + ".");
+        player.simpleDialogue((currentStar != null ? "A star recently crashed near " + currentStar.location.description + "! " : "") + "The next star looks like it's going to land near " + (!locIterator.hasNext() ? LOCATIONS.get(0) : locIterator.peek()).description + ".");
     }
 
     public static void addDiscoveredStar(Star star, String displayName) {

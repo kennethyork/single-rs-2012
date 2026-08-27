@@ -61,7 +61,7 @@ public class SteelTitan extends FamiliarCombatScript {
 
 	@ServerStartupEvent
 	public static void addDefenseBoost() {
-		CombatFormulaKt.onCombatFormulaAdjust((_, target, _, _) -> {
+		CombatFormulaKt.onCombatFormulaAdjust((from, target, from2, to2) -> {
 			if (!(target instanceof Player pTarget)) return new CombatMod();
 			if (pTarget.getFamiliarPouch() == Pouch.STEEL_TITAN) return new CombatMod(1.0, 1.0, 1.0, 1.0, 1.0, 1.15, 1.0);
 			return new CombatMod();
