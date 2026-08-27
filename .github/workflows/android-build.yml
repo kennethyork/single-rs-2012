@@ -2,6 +2,12 @@ name: Android build
 
 on:
   workflow_dispatch:
+    inputs:
+      with-cache:
+        description: "Bundle the game cache, producing an installable ~860 MB APK"
+        type: boolean
+        required: false
+        default: false
   pull_request:
     paths:
       - "android/**"
@@ -26,15 +32,53 @@ jobs:
       - name: Grant execute permission for gradlew
         working-directory: android
         run: chmod +x gradlew
-      # The ~840 MB game cache is not in git (see .gitignore) -- it ships with a
-      # release drop -- so CI builds a cache-less APK. It verifies that the
-      # client and world server compile, dex, and package; it cannot start a
-      # world, and is not a releasable artifact.
-      - name: Build debug APK (without the game cache)
+
+      # An 860 MB APK plus a 1 GB tarball needs more than the runner's default
+      # free space once Gradle's intermediates are counted.
+      - name: Free disk space
+        if: inputs.with-cache
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc
+          df -h /
+
+      # The cache is not in git (see .gitignore) -- it ships inside the release
+      # bundles, so pull it back out of the newest one.
+      - name: Download the game cache
+        if: inputs.with-cache
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          asset=$(gh release view --json assets \
+            --jq '.assets[] | select(.name | endswith("-linux-x64.tar.gz")) | .name' | head -1)
+          echo "Downloading $asset"
+          gh release download --pattern "$asset" --output release.tar.gz
+          tar -xzf release.tar.gz --wildcards '*/cache/main_file_cache.*' --strip-components=2
+          rm release.tar.gz
+          mkdir -p darkan-cache
+          mv main_file_cache.* darkan-cache/
+          du -sh darkan-cache
+      # By default the ~840 MB cache is left out: it is not in git, and a
+      # cache-less APK still verifies that the client and world server compile,
+      # dex and package. Dispatch with with-cache to get one that can actually
+      # start a world.
+      #
+      # Both branches must be non-empty: an empty string is falsy in a GitHub
+      # expression, so `cond && '' || 'x'` always yields 'x'.
+      - name: Build debug APK
         working-directory: android
-        run: ./gradlew :app:assembleDebug -Pdarkan.bundleCache=false
+        run: |
+          ./gradlew :app:assembleDebug \
+            ${{ inputs.with-cache && '-Pdarkan.bundleCache=true' || '-Pdarkan.bundleCache=false' }}
+          ls -la app/build/outputs/apk/debug/
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: single-rs-2012-debug-apk-no-cache
+          name: single-rs-2012-debug-apk${{ inputs.with-cache && '' || '-no-cache' }}
           path: android/app/build/outputs/apk/debug/*.apk
+          # The cache inside is stored, not deflated, so re-compressing the
+          # artifact burns minutes for nothing.
+          compression-level: 0
+          # An 860 MB artifact per run adds up; keep the installable one briefly.
+          retention-days: ${{ inputs.with-cache && 7 || 30 }}
