@@ -41,7 +41,7 @@ object SinglePlayerLauncher {
         check(javaVersion >= 24) { "Java 24 or newer is required" }
         val cache = File(System.getProperty("darkan.cache.path", "../darkan-cache"))
         check(File(cache, "main_file_cache.dat2").isFile) { "Cache is missing from ${cache.absolutePath}" }
-        check(File("./data/npcs/simulated-players.json").isFile) { "Simulated-player configuration is missing" }
+        check(Settings.dataFile("npcs/simulated-players.json").isFile) { "Simulated-player configuration is missing" }
         Class.forName("com.rs.Launcher", false, javaClass.classLoader)
         Class.forName("com.rs.Loader", false, javaClass.classLoader)
         check(simulatedPlayerAccount("Smoke Bot").rights != null) {

@@ -16,6 +16,7 @@
 //
 package com.rs.utils.spawns;
 
+import com.rs.Settings;
 import com.google.gson.JsonIOException;
 import com.rs.cache.loaders.ItemDefinitions;
 import com.rs.game.World;
@@ -39,7 +40,7 @@ import java.util.Map;
 @PluginEventHandler
 public final class ItemSpawns {
 
-	private final static String PATH = "data/items/spawns/";
+	private final static String PATH = Settings.dataPath("items/spawns/");
 	final static Charset ENCODING = StandardCharsets.UTF_8;
 
 	private static final Object lock = new Object();
@@ -50,7 +51,7 @@ public final class ItemSpawns {
 	@SuppressWarnings("deprecation")
 	public static boolean addSpawn(String username, int id, int amount, int respawnTicks, Tile tile) {
 		synchronized (lock) {
-			File file = new File("data/items/addedSpawns.json");
+			File file = Settings.dataFile("items/addedSpawns.json");
 			ADDED_SPAWNS.add(new ItemSpawn(id, amount, tile, respawnTicks, ""+ItemDefinitions.getDefs(id).getName()+" added by " + username));
 			World.addGroundItemForever(new Item(id, amount), tile, respawnTicks);
 			try {

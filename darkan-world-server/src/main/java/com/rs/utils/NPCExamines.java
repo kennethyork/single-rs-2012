@@ -35,7 +35,7 @@ import java.util.Map;
 @PluginEventHandler
 public class NPCExamines {
 	private static Map<Integer, String> EXAMINES = new HashMap<>();
-	private final static String PATH = "./data/npcs/examines.json";
+	private final static String PATH = Settings.dataPath("npcs/examines.json");
 
 	@ServerStartupEvent(Priority.FILE_IO)
 	public static void init() throws JsonIOException, IOException {

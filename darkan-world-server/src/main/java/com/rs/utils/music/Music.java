@@ -16,6 +16,7 @@
 //
 package com.rs.utils.music;
 
+import com.rs.Settings;
 import com.google.gson.JsonIOException;
 import com.rs.cache.loaders.ItemDefinitions;
 import com.rs.game.World;
@@ -58,7 +59,7 @@ public class Music {
 	@ServerStartupEvent(Priority.FILE_IO)
 	public static void init() {
 		try {
-			Song[] songs = JsonFileManager.loadJsonFile(new File("./data/music/songs.json"), Song[].class);
+			Song[] songs = JsonFileManager.loadJsonFile(Settings.dataFile("music/songs.json"), Song[].class);
 			for (Song s : songs) {
 				MUSICS.put(s.getId(), s);
 				for (int regionId : s.getRegionIds())
@@ -73,8 +74,8 @@ public class Music {
 					}
 			}
 
-			parentGenres = JsonFileManager.loadJsonFile(new File("./data/music/parent-genres.json"), Genre[].class);
-			File[] genreFiles = new File("./data/music/regions/").listFiles();
+			parentGenres = JsonFileManager.loadJsonFile(Settings.dataFile("music/parent-genres.json"), Genre[].class);
+			File[] genreFiles = Settings.dataFile("music/regions/").listFiles();
 			for (File f : genreFiles)
 				genres.addAll(Arrays.asList(JsonFileManager.loadJsonFile(f, Genre[].class)));
 			addGenresToChunkMap();

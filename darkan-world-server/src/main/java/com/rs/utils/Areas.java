@@ -16,6 +16,7 @@
 //
 package com.rs.utils;
 
+import com.rs.Settings;
 import com.google.gson.JsonIOException;
 import com.rs.lib.file.JsonFileManager;
 import com.rs.lib.util.Logger;
@@ -33,7 +34,7 @@ import java.util.stream.Collectors;
 @PluginEventHandler
 public class Areas {
 
-	private final static String PATH = "data/areas/";
+	private final static String PATH = Settings.dataPath("areas/");
 	private static final HashMap<String, Set<Integer>> AREAS = new HashMap<>();
 
 	@ServerStartupEvent(Priority.FILE_IO)

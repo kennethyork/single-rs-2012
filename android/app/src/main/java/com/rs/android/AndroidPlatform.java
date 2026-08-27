@@ -15,6 +15,8 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  * Platform bridge between the 2012 client, the AWT shim, and the Android host.
@@ -27,6 +29,8 @@ public final class AndroidPlatform {
     private static Context appContext;
     private static String internalDir;
     private static String cacheDir;
+    private static String dataDir;
+    private static String saveDir;
 
     private AndroidPlatform() {}
 
@@ -34,6 +38,8 @@ public final class AndroidPlatform {
         appContext = ctx.getApplicationContext();
         internalDir = appContext.getFilesDir().getAbsolutePath() + "/";
         cacheDir = internalDir + "cache/";
+        dataDir = internalDir + "data/";
+        saveDir = internalDir + "saves/";
     }
 
     public static Context getContext() {
@@ -53,6 +59,95 @@ public final class AndroidPlatform {
         return cacheDir;
     }
 
+    /**
+     * Directory holding the server's data files (drop tables, spawns, shops,
+     * XTEA keys, worldConfig.json), unpacked from assets/data.zip.
+     *
+     * The server reads these through relative paths, which cannot work here: an
+     * Android process starts with "/" as its working directory and there is no
+     * chdir in android.system.Os. Settings.getDataPath() is pointed at this
+     * directory instead via the darkan.data.path property.
+     */
+    public static String getDataDir() {
+        return dataDir;
+    }
+
+    /** Directory the world server writes player saves into. */
+    public static String getSaveDir() {
+        return saveDir;
+    }
+
+    /**
+     * Unpacks assets/data.zip into internal storage unless the same archive is
+     * already there. ~4100 small files, so they ship as one archive and are
+     * unpacked in a single pass rather than copied asset by asset.
+     *
+     * @throws IOException if the data cannot be unpacked; the server cannot
+     *                     start without it.
+     */
+    public static void extractDataIfNeeded() throws IOException {
+        if (appContext == null || dataDir == null)
+            throw new IOException("AndroidPlatform.init() has not been called.");
+
+        AssetManager assets = appContext.getAssets();
+        String stamp = dataArchiveStamp(assets);
+        File target = new File(dataDir);
+        File marker = new File(target, COMPLETE_MARKER);
+        if (stamp != null && marker.isFile() && stamp.equals(readFile(marker)))
+            return;
+
+        if (marker.isFile() && !marker.delete())
+            throw new IOException("Cannot clear the previous data marker: " + marker);
+        if (!target.isDirectory() && !target.mkdirs())
+            throw new IOException("Cannot create the data directory: " + target);
+
+        byte[] buffer = new byte[1 << 16];
+        try (ZipInputStream zip = new ZipInputStream(assets.open(DATA_ASSET))) {
+            ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                // Entries are data/<...>; they unpack alongside, not inside, the
+                // data directory itself.
+                String name = entry.getName();
+                if (name.startsWith("data/")) name = name.substring("data/".length());
+                if (name.isEmpty()) continue;
+                File out = new File(target, name);
+                // Refuse entries that would escape the target directory.
+                if (!out.getCanonicalPath().startsWith(target.getCanonicalPath() + File.separator))
+                    throw new IOException("Refusing to unpack outside the data directory: " + entry.getName());
+                if (entry.isDirectory()) {
+                    if (!out.isDirectory() && !out.mkdirs())
+                        throw new IOException("Cannot create " + out);
+                    continue;
+                }
+                File parent = out.getParentFile();
+                if (parent != null && !parent.isDirectory() && !parent.mkdirs())
+                    throw new IOException("Cannot create " + parent);
+                try (OutputStream os = new FileOutputStream(out)) {
+                    int read;
+                    while ((read = zip.read(buffer)) != -1) os.write(buffer, 0, read);
+                }
+            }
+        }
+        if (stamp != null) writeFile(marker, stamp);
+    }
+
+    /**
+     * Identity of the bundled archive, used to re-unpack when the APK ships a
+     * newer one. Null if it cannot be determined, in which case the data is
+     * unpacked every launch rather than risking a stale copy.
+     */
+    private static String dataArchiveStamp(AssetManager assets) throws IOException {
+        try {
+            return "data.zip:" + assets.openFd(DATA_ASSET).getLength();
+        } catch (IOException compressedOrMissing) {
+            // openFd only works for uncompressed assets. Confirm it is at least
+            // present, so a missing archive is a clear error rather than a
+            // confusing failure part-way through unpacking.
+            assets.open(DATA_ASSET).close();
+            return null;
+        }
+    }
+
     /** Reports extraction progress so the UI can show something during the first boot. */
     public interface ProgressListener {
         void onCacheProgress(long bytesDone, long bytesTotal);
@@ -70,6 +165,7 @@ public final class AndroidPlatform {
     }
 
     private static final String CACHE_ASSET_DIR = "cache";
+    private static final String DATA_ASSET = "data.zip";
     private static final String MANIFEST = "manifest.txt";
     /** Holds the manifest the current extraction was produced from. */
     private static final String COMPLETE_MARKER = ".cache-complete";

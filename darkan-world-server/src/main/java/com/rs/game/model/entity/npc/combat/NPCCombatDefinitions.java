@@ -16,6 +16,7 @@
 //
 package com.rs.game.model.entity.npc.combat;
 
+import com.rs.Settings;
 import com.rs.cache.loaders.Bonus;
 import com.rs.cache.loaders.NPCDefinitions;
 import com.rs.game.content.combat.CombatStyle;
@@ -35,7 +36,7 @@ import java.util.Objects;
 @PluginEventHandler
 public class NPCCombatDefinitions {
 
-	private final static String PATH = "data/npcs/combatdefs/";
+	private final static String PATH = Settings.dataPath("npcs/combatdefs/");
 	public static HashMap<Object, NPCCombatDefinitions> COMBAT_DEFINITIONS = new HashMap<>();
 	public static NPCCombatDefinitions DEFAULT_DEF;
 

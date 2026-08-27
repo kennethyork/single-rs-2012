@@ -16,6 +16,7 @@
 //
 package com.rs.game.content.world.doors;
 
+import com.rs.Settings;
 import com.google.gson.JsonIOException;
 import com.rs.game.model.entity.player.Player;
 import com.rs.game.model.gameobject.GameObject;
@@ -32,7 +33,7 @@ import java.util.Map;
 @PluginEventHandler
 public class DoorPair {
 
-	private static final String PATH = "./data/map/doorPairs.json";
+	private static final String PATH = Settings.dataPath("map/doorPairs.json");
 
 	private static DoorPair[] DOOR_PAIRS;
 	private static final Map<Integer, Integer> PAIRING_MAP = new HashMap<>();

@@ -9,3 +9,7 @@
 .externalNativeBuild
 .cxx
 .kotlin
+
+# The root .gitignore has a blanket *.jar rule, which silently swallows the
+# Gradle wrapper -- without it a fresh clone cannot build this project at all.
+!gradle/wrapper/gradle-wrapper.jar

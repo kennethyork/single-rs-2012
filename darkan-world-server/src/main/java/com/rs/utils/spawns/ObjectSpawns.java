@@ -16,6 +16,7 @@
 //
 package com.rs.utils.spawns;
 
+import com.rs.Settings;
 import com.google.gson.JsonIOException;
 import com.rs.lib.file.JsonFileManager;
 import com.rs.lib.util.Logger;
@@ -35,7 +36,7 @@ import java.util.Map;
 @PluginEventHandler
 public final class ObjectSpawns {
 
-	private final static String PATH = "data/map/objectspawns/";
+	private final static String PATH = Settings.dataPath("map/objectspawns/");
 	final static Charset ENCODING = StandardCharsets.UTF_8;
 
 	private static final ArrayList<ObjectSpawn> ALL_SPAWNS = new ArrayList<>();

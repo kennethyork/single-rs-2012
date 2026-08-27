@@ -42,7 +42,7 @@ while [ $SECONDS -lt $deadline ]; do
         break
     fi
     # Terminal checkpoints: no point waiting out the clock after either.
-    if grep -qE "$TAG.*(boot: client engine started|activity: game thread exited)" \
+    if grep -qE "$TAG.*(boot: client engine started|activity: game thread exited|world server did not start|never opened port)" \
         "$LOG_DIR/logcat-full.txt" 2>/dev/null; then
         echo "==> Reached a terminal checkpoint, stopping early."
         break
@@ -64,6 +64,9 @@ checkpoints=(
     "activity: java.awt shim loaded, Loader instantiated"
     "boot: starting, android=true"
     "boot: cache ready at"
+    "boot: data ready at"
+    "boot: starting world server"
+    "boot: world server listening on"
     "boot: starting client engine"
     "boot: client engine started"
 )
@@ -79,12 +82,16 @@ done
 
 echo
 echo "=================== notable log lines =================="
-grep -E "FATAL EXCEPTION|VerifyError|ClassNotFoundException|NoClassDefFoundError|UnsatisfiedLinkError|Prohibited package|cache extraction failed|game thread died" \
+grep -E "FATAL EXCEPTION|VerifyError|ClassNotFoundException|NoClassDefFoundError|UnsatisfiedLinkError|Prohibited package|cache extraction failed|data extraction failed|world server failed|never opened port|game thread died" \
     "$LOG_DIR/logcat-full.txt" 2>/dev/null | head -40 || echo "  (none)"
 
 echo
 echo "=================== $TAG log ==========================="
 grep -F "$TAG" "$LOG_DIR/logcat-full.txt" 2>/dev/null | head -60 || echo "  (none)"
+
+echo
+echo "=================== world server log ==================="
+grep -E "System\.out|System\.err" "$LOG_DIR/logcat-full.txt" 2>/dev/null | tail -60 || echo "  (none)"
 
 echo
 echo "=================== stack traces ======================="

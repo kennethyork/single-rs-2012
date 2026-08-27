@@ -129,7 +129,7 @@ public final class Settings {
 		Logger.info(Settings.class, "loadConfig", "Loading config...");
 		try {
 			File rootConfigFile = new File("./worldConfig.json");
-			File dataConfigFile = new File("./data/worldConfig.json");
+			File dataConfigFile = dataFile("worldConfig.json");
 			if (rootConfigFile.exists())
 				SETTINGS = JsonFileManager.loadJsonFile(rootConfigFile, Settings.class);
 			else if (dataConfigFile.exists())
@@ -245,6 +245,33 @@ public final class Settings {
 	public String getSavePath() {
 		String override = System.getProperty("darkan.save.path");
 		return override != null && !override.isBlank() ? override : (savePath != null ? savePath : DEFAULTS.savePath);
+	}
+
+	/**
+	 * Root of the server's data directory, always with a trailing separator.
+	 *
+	 * The server reads its data through relative paths, which works on desktop
+	 * because it is launched from the world-server directory. Android has no
+	 * such thing -- an app process starts with "/" as its working directory and
+	 * cannot change it -- so the location is overridable with darkan.data.path,
+	 * the same way the cache and save paths already are.
+	 *
+	 * Static because loadConfig() needs it before SETTINGS exists.
+	 */
+	public static String getDataPath() {
+		String override = System.getProperty("darkan.data.path");
+		String path = override != null && !override.isBlank() ? override : "./data";
+		return path.endsWith(File.separator) || path.endsWith("/") ? path : path + "/";
+	}
+
+	/** Resolves a path under the data directory, e.g. dataPath("npcs/examines.json"). */
+	public static String dataPath(String relative) {
+		return getDataPath() + relative;
+	}
+
+	/** Resolves a file under the data directory, e.g. dataFile("worldConfig.json"). */
+	public static File dataFile(String relative) {
+		return new File(dataPath(relative));
 	}
 
 	public static boolean isOwner(String string) {

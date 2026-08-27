@@ -16,6 +16,7 @@
 //
 package com.rs.utils;
 
+import com.rs.Settings;
 import com.google.gson.JsonIOException;
 import com.rs.cache.loaders.NPCDefinitions;
 import com.rs.lib.file.JsonFileManager;
@@ -35,7 +36,7 @@ import java.util.HashMap;
 @PluginEventHandler
 public class DropSets {
 
-	private final static String PATH = "data/npcs/drops/";
+	private final static String PATH = Settings.dataPath("npcs/drops/");
 	public static HashMap<String, DropSet> DROPS = new HashMap<>();
 	public static HashMap<Object, DropSet> NPC_DROPS = new HashMap<>();
 	public static final DropSet DEFAULT_DROPSET = new DropSet(new DropTable(0.0, 0.0, false));

@@ -1,5 +1,6 @@
 package com.rs.game.content.world.npcs
 
+import com.rs.Settings
 import com.rs.lib.file.JsonFileManager
 import com.rs.lib.game.Tile
 import com.rs.lib.util.Logger
@@ -7,7 +8,7 @@ import com.rs.plugin.annotations.ServerStartupEvent
 import java.io.File
 import java.util.Locale
 
-private const val CONFIG_PATH = "./data/npcs/simulated-players.json"
+private val CONFIG_PATH get() = Settings.dataPath("npcs/simulated-players.json")
 
 enum class SimulatedPlayerMode {
     SOCIAL,

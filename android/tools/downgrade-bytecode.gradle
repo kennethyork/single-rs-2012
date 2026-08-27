@@ -11,13 +11,23 @@
 // java.lang.runtime.SwitchBootstraps, no preview attributes -- only records,
 // which are class 60+ and are desugared by D8), so a pure version-header
 // rewrite is sufficient and lossless here.
-ext.downgradeJar = { java.io.File input, java.io.File output, int targetMajor ->
+// `drop` holds internal class names without the .class suffix, e.g.
+// 'com/rs/lib/util/MapXTEAs'. Nested and anonymous classes go with their outer
+// class -- D8 rejects an orphaned nested class whose nest host is absent.
+ext.downgradeJar = { java.io.File input, java.io.File output, int targetMajor, List<String> drop = [] ->
     output.parentFile.mkdirs()
     def rewritten = 0
+    def dropped = 0
     new java.util.zip.ZipFile(input).withCloseable { zip ->
         new java.util.zip.ZipOutputStream(new FileOutputStream(output)).withCloseable { out ->
             zip.entries().each { entry ->
                 if (entry.directory) return
+                // Classes the Android build replaces with its own version; keeping
+                // both would be a duplicate-class error at dex time.
+                if (drop.any { name -> entry.name == "${name}.class" || entry.name.startsWith("${name}\$") }) {
+                    dropped++
+                    return
+                }
                 byte[] bytes = zip.getInputStream(entry).bytes
                 if (entry.name.endsWith('.class') && bytes.length > 8) {
                     int major = ((bytes[6] & 0xFF) << 8) | (bytes[7] & 0xFF)
@@ -43,5 +53,6 @@ ext.downgradeJar = { java.io.File input, java.io.File output, int targetMajor ->
             }
         }
     }
-    logger.lifecycle("downgradeJar: ${input.name} -> ${output.name} (${rewritten} classes capped at major ${targetMajor})")
+    logger.lifecycle("downgradeJar: ${input.name} -> ${output.name} " +
+            "(${rewritten} classes capped at major ${targetMajor}, ${dropped} dropped)")
 }

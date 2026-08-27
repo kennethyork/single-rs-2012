@@ -16,7 +16,7 @@ import java.io.IOException;
 @PluginEventHandler
 public class WorldPersistentData {
 	
-	private static final String DATA_PATH = "./data/world.json";
+	private static final String DATA_PATH = Settings.dataPath("world.json");
 
 	private static File dataFile() {
 		return Settings.getConfig().isSinglePlayer() ? LocalFileStore.file("world.json") : new File(DATA_PATH);

@@ -16,6 +16,7 @@
 //
 package com.rs.utils.shop;
 
+import com.rs.Settings;
 import com.rs.engine.Shop;
 import com.rs.game.World;
 import com.rs.game.model.entity.player.Player;
@@ -38,7 +39,7 @@ public class ShopsHandler {
 	private static final Map<String, ShopDef> SHOP_DEFS = new HashMap<>();
 	private static final Map<Integer, String> NPC_SHOPS = new HashMap<>();
 
-	private static final String PATH = "data/items/shops/";
+	private static final String PATH = Settings.dataPath("items/shops/");
 
 	@ServerStartupEvent(Priority.FILE_IO)
 	public static void loadShops() {

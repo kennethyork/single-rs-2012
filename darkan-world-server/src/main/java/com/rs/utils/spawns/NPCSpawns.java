@@ -16,6 +16,7 @@
 //
 package com.rs.utils.spawns;
 
+import com.rs.Settings;
 import com.google.gson.JsonIOException;
 import com.rs.cache.loaders.NPCDefinitions;
 import com.rs.game.World;
@@ -38,7 +39,7 @@ import java.util.Map;
 @PluginEventHandler
 public final class NPCSpawns {
 
-	private final static String PATH = "data/npcs/spawns/";
+	private final static String PATH = Settings.dataPath("npcs/spawns/");
 	final static Charset ENCODING = StandardCharsets.UTF_8;
 
 	private static final Object lock = new Object();
@@ -48,7 +49,7 @@ public final class NPCSpawns {
 
 	public static boolean addSpawn(String username, int id, Tile tile) {
 		synchronized (lock) {
-			File file = new File("./data/npcs/addedSpawns.json");
+			File file = Settings.dataFile("npcs/addedSpawns.json");
 			ADDED_SPAWNS.add(new NPCSpawn(id, tile, ""+NPCDefinitions.getDefs(id).getName()+" added by " + username));
 			World.spawnNPC(id, tile);
 			try {

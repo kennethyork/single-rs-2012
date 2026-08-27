@@ -14,6 +14,11 @@ def cacheSourceDir = file(project.findProperty('darkan.cacheDir') ?: "${rootDir}
 def bundleCache = !(project.findProperty('darkan.bundleCache')?.toString()?.toLowerCase() in ['false', '0', 'no'])
 def cacheAssetsDir = layout.buildDirectory.dir('generated/cache-assets').get().asFile
 
+// The world server's data directory (drop tables, spawns, shops, XTEA keys,
+// worldConfig.json). Small enough to always bundle, unlike the game cache.
+def serverDataDir = file("${rootDir}/../darkan-world-server/data")
+def dataAssetsDir = layout.buildDirectory.dir('generated/data-assets').get().asFile
+
 android {
     namespace 'com.rs.android'
     compileSdk 34
@@ -53,6 +58,8 @@ android {
         // deflating it costs minutes of build time for almost no saving, and
         // storing it lets AssetManager stream it straight out of the APK.
         noCompress.add('dat2')
+        // data.zip is already deflated internally; leave it stored.
+        noCompress.add('zip')
     }
 
     // The server pulls in dozens of server-side jars (netty, undertow, mongo,
@@ -134,7 +141,7 @@ android {
             }
             res.srcDirs = ['src/main/res']
             // cacheAssetsDir is produced by stageCacheAssets below.
-            assets.srcDirs = ['src/main/assets', cacheAssetsDir]
+            assets.srcDirs = ['src/main/assets', cacheAssetsDir, dataAssetsDir]
         }
     }
 }
@@ -245,9 +252,29 @@ tasks.register('stageCacheAssets') {
     }
 }
 
+// The server reads ~4100 files out of data/. Copying them in as individual
+// assets would mean an equally slow file-by-file extraction on device, so they
+// ship as one archive that is unpacked in a single pass.
+tasks.register('stageDataAssets', Zip) {
+    description = "Packs the world server's data directory into assets/data.zip."
+    from serverDataDir
+    // Entries are data/<...> so the archive unpacks straight into the app's
+    // files directory, which is what darkan.data.path then points at.
+    into 'data'
+    archiveFileName = 'data.zip'
+    destinationDirectory = dataAssetsDir
+    // Deterministic archives keep the task (and the APK) reproducible.
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    doFirst {
+        if (!serverDataDir.isDirectory())
+            throw new GradleException("The world server's data directory is missing from ${serverDataDir}.")
+    }
+}
+
 // AGP's asset merge reads the srcDirs above, so it has to wait for the staging.
 tasks.matching { it.name ==~ /(generate|merge)\w*Assets/ }.configureEach {
-    dependsOn 'stageCacheAssets'
+    dependsOn 'stageCacheAssets', 'stageDataAssets'
 }
 
 // ---------------------------------------------------------------------------
@@ -276,7 +303,14 @@ tasks.register('downgradeDarkanCore') {
     outputs.file(target).withPropertyName('downgraded')
     doLast {
         // 61 = Java 17, matching compileOptions/kotlinOptions above.
-        downgradeJar(published.singleFile, target.get().asFile, 61)
+        downgradeJar(published.singleFile, target.get().asFile, 61, [
+                // Hardcodes "./data/map/xteaKeys.json". An Android process
+                // starts at "/" and cannot chdir, so that path is unreadable and
+                // every encrypted map region would fail to decode. Replaced by
+                // src/main/java/com/rs/lib/util/MapXTEAs.java, which resolves the
+                // path through Settings instead.
+                'com/rs/lib/util/MapXTEAs',
+        ])
     }
 }
 

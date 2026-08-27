@@ -31,7 +31,7 @@ import java.util.Map;
 public class ItemConfig {
 	private static Map<Integer, ItemConfig> CONFIG_CACHE = new HashMap<>();
 	private static final Map<String, Integer> UID_TO_ID = new HashMap<>();
-	private final static String PATH = "./data/items/config.json";
+	private final static String PATH = Settings.dataPath("items/config.json");
 
 	private String uidName;
 	private int dropSound = -1;

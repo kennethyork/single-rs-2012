@@ -16,6 +16,7 @@
 //
 package com.rs.utils.drop;
 
+import com.rs.Settings;
 import com.rs.lib.file.JsonFileManager;
 import com.rs.lib.util.Rational;
 import com.rs.lib.util.Utils;
@@ -44,7 +45,7 @@ public class Fix {
 		INC.sort((o1, o2) -> Double.compare(o2, o1));
 	}
 
-	private final static String PATH = "data/npcs/drops/";
+	private final static String PATH = Settings.dataPath("npcs/drops/");
 
 	public static void main(String[] args) throws IOException {
 		//Cache.init();

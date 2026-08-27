@@ -2,8 +2,15 @@ package com.rs.android;
 
 import android.util.Log;
 
+import com.rs.Launcher;
 import com.rs.Loader;
+import com.rs.Settings;
 import com.rs.jagex.client;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 
 /**
  * Entry point for the 2012 client on Android.
@@ -44,14 +51,87 @@ public final class AndroidLoader {
         }
         Log.i(TAG, "boot: cache ready at " + AndroidPlatform.getCacheDir());
         System.setProperty("darkan.cache.path", AndroidPlatform.getCacheDir());
+
+        // The server reads its data through relative paths, which resolve
+        // against "/" on Android. Unpack data/ and point darkan.data.path at it.
+        showStatus("Unpacking game data\u2026");
+        try {
+            AndroidPlatform.extractDataIfNeeded();
+        } catch (IOException e) {
+            Log.e(TAG, "boot: data extraction failed", e);
+            showStatus("Could not unpack the game data: " + e.getMessage());
+            return;
+        }
+        Log.i(TAG, "boot: data ready at " + AndroidPlatform.getDataDir());
+        System.setProperty("darkan.data.path", AndroidPlatform.getDataDir());
+
+        // Single-player is what makes the server viable here: it is the flag
+        // that skips MongoDB and the Undertow web API, neither of which works on
+        // Android. worldConfig.json ships with singlePlayer false, but
+        // Settings.isSinglePlayer() ORs in this property.
+        System.setProperty("darkan.singlePlayer", "true");
+        System.setProperty("darkan.save.path", AndroidPlatform.getSaveDir());
+        new File(AndroidPlatform.getSaveDir()).mkdirs();
+        // The client derives its own scratch paths from user.home, which is "/".
+        System.setProperty("user.home", AndroidPlatform.getWritableDir());
+
+        if (!startWorldServer()) return;
+
         Loader.loadParams();
         if (Loader.IP_ADDRESS == null) Loader.IP_ADDRESS = "127.0.0.1";
         Log.i(TAG, "boot: starting client engine");
+        showStatus("Starting the client\u2026");
         client clnt = new client();
         clnt.supplyApplet(loader);
         clnt.init();
         clnt.start();
         Log.i(TAG, "boot: client engine started");
+    }
+
+    /**
+     * Starts the world server in this process and waits for it to accept
+     * connections, mirroring the desktop SinglePlayerLauncher. Launcher.main
+     * returns once the world thread is running, so it is called inline.
+     *
+     * @return false if the world never came up, in which case the client is not
+     *         started -- it would only fail to connect.
+     */
+    private static boolean startWorldServer() {
+        Log.i(TAG, "boot: starting world server");
+        showStatus("Starting the world\u2026");
+        try {
+            Launcher.main(new String[0]);
+        } catch (Throwable t) {
+            Log.e(TAG, "boot: world server failed to start", t);
+            showStatus("The world server did not start: " + t);
+            return false;
+        }
+        int port = Settings.getConfig().getWorldInfo().port();
+        Log.i(TAG, "boot: waiting for the world on 127.0.0.1:" + port);
+        if (!waitForWorld(port)) {
+            Log.e(TAG, "boot: the world never opened port " + port);
+            showStatus("The world never opened port " + port + ".");
+            return false;
+        }
+        Log.i(TAG, "boot: world server listening on " + port);
+        return true;
+    }
+
+    private static boolean waitForWorld(int port) {
+        for (int attempt = 0; attempt < 100; attempt++) {
+            try (Socket socket = new Socket()) {
+                socket.connect(new InetSocketAddress("127.0.0.1", port), 100);
+                return true;
+            } catch (Exception notYet) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    return false;
+                }
+            }
+        }
+        return false;
     }
 
     private static int lastReportedPercent = -1;
