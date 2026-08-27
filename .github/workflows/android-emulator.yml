@@ -154,4 +154,5 @@ jobs:
           name: logcat-api${{ matrix.api-level }}
           path: |
             android/build/emulator-logs/**
+            android/build/emulator-logs/screen.png
           if-no-files-found: warn

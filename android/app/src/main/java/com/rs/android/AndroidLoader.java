@@ -74,6 +74,9 @@ public final class AndroidLoader {
         new File(AndroidPlatform.getSaveDir()).mkdirs();
         // The client derives its own scratch paths from user.home, which is "/".
         System.setProperty("user.home", AndroidPlatform.getWritableDir());
+        // It opens <user.home>/.darkanrs/caches/dk_cl_*.dat directly, without
+        // creating the directory first.
+        new File(AndroidPlatform.getWritableDir(), Loader.CACHE_DIR).mkdirs();
 
         if (!startWorldServer()) return;
 
@@ -161,7 +164,13 @@ public final class AndroidLoader {
     public static void presentFrame(int[] pixels, int width, int height) {
         GameSurfaceView v = GameBridge.surfaceView;
         if (v != null) {
+            if (!framePresented) {
+                framePresented = true;
+                Log.i(TAG, "render: first frame presented " + width + "x" + height);
+            }
             v.renderFrame(pixels, width, height);
         }
     }
+
+    private static volatile boolean framePresented;
 }

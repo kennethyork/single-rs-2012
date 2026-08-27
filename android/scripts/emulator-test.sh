@@ -56,7 +56,7 @@ while [ $SECONDS -lt $deadline ]; do
         break
     fi
     # Terminal checkpoints: no point waiting out the clock after either.
-    if grep -qE "$TAG.*(boot: client engine started|activity: game thread exited|world server did not start|never opened port)" \
+    if grep -qE "$TAG.*(render: first frame presented|activity: game thread died|world server did not start|never opened port)" \
         "$LOG_DIR/logcat-full.txt" 2>/dev/null; then
         echo "==> Reached a terminal checkpoint, stopping early."
         break
@@ -66,6 +66,10 @@ done
 
 sleep 2
 kill $LOGCAT_PID 2>/dev/null || true
+
+echo "==> Capturing the screen"
+adb exec-out screencap -p > "$LOG_DIR/screen.png" 2>/dev/null || echo "  (screencap failed)"
+[ -s "$LOG_DIR/screen.png" ] && echo "  saved $(wc -c < "$LOG_DIR/screen.png") bytes"
 
 grep -E "$TAG|AndroidRuntime|System\.err|art  *:|dalvik" "$LOG_DIR/logcat-full.txt" \
     > "$LOG_DIR/logcat-filtered.txt" 2>/dev/null || true
@@ -83,6 +87,7 @@ checkpoints=(
     "boot: world server listening on"
     "boot: starting client engine"
     "boot: client engine started"
+    "render: first frame presented"
 )
 reached=0
 for cp in "${checkpoints[@]}"; do
