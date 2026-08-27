@@ -77,8 +77,11 @@ public final class AndroidLoader {
 
         if (!startWorldServer()) return;
 
-        Loader.loadParams();
+        // loadParams() reads IP_ADDRESS into clientParams, and Properties
+        // rejects a null value, so the address has to be set first -- the order
+        // the desktop Loader.main uses.
         if (Loader.IP_ADDRESS == null) Loader.IP_ADDRESS = "127.0.0.1";
+        Loader.loadParams();
         Log.i(TAG, "boot: starting client engine");
         showStatus("Starting the client\u2026");
         client clnt = new client();
