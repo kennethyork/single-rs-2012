@@ -277,6 +277,12 @@ tasks.matching { it.name ==~ /(generate|merge)\w*Assets/ }.configureEach {
     dependsOn 'stageCacheAssets', 'stageDataAssets'
 }
 
+// Lint's release-vital analysis reads the same asset source dirs, so it too has
+// to wait for the staging (it runs on assembleRelease, not assembleDebug).
+tasks.matching { it.name ==~ /(lintVital|generateReleaseLintVital)\w*/ }.configureEach {
+    dependsOn 'stageCacheAssets', 'stageDataAssets'
+}
+
 // ---------------------------------------------------------------------------
 // rs.darkan:core bytecode downgrade
 // ---------------------------------------------------------------------------

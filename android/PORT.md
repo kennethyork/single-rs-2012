@@ -7,13 +7,13 @@ an Android renderer so the game can run on phones and tablets.
 > **Status: boots to the login screen on an Android emulator.** The client and
 > the full world server build into one APK; the server starts in-process, listens
 > on 127.0.0.1:43595, and the client connects to it, renders through the software
-> renderer, and reaches its login prompt. Verified end to end by the
+> renderer, and reaches its login prompt. Keyboard input is wired, so the login
+> form can be filled in and submitted. Verified end to end by the
 > [emulator test](#emulator-testing) on API 26, with screenshots.
 >
 > ![The client at its login screen on an Android emulator](../docs/images/android-login-screen.png)
 >
-> **Not yet done: logging in.** Keyboard input is not wired, so the username and
-> password fields cannot be typed into. Nothing has run on physical hardware.
+> **Not yet done: physical device testing.** Nothing has run on real hardware.
 
 ## Layout
 
@@ -160,13 +160,7 @@ emulator-run.
 
 ## Remaining work
 
-### 1. Keyboard input
-
-Touch is wired (`Component.dispatchInputEvent`), but key events are not, so the
-login form cannot be filled in. Needs Android key events translated to AWT
-`KeyEvent`s and a way to raise the soft keyboard.
-
-### 2. Physical device testing
+### 1. Physical device testing
 
 Everything so far is an emulator, configured with a 1 GB heap. `largeHeap`
 typically yields 256-512 MB on a real phone, and the server hit an
@@ -174,7 +168,7 @@ typically yields 256-512 MB on a real phone, and the server hit an
 hardware is unknown; if it does not, the fix is server-side (fewer simulated
 players, smaller caches) rather than a build setting.
 
-### 3. Loose ends
+### 2. Loose ends
 
 - `os.name` is `linux` and cannot be corrected (see below), so
   `NativeLibraryLoader` tries to `dlopen` the desktop renderer libraries and

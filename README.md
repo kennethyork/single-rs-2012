@@ -29,9 +29,11 @@ extract the entire archive, and use its launcher:
 | Linux x64 | `./run.sh` | `./run.sh 25` | Run from a terminal if double-clicking is disabled |
 | Windows x64 | `run.bat` | `run.bat 25` | Keep every extracted folder beside the launcher |
 | macOS x64 | `./run.command` | `./run.command 25` | Apple Silicon requires Rosetta 2 |
+| Android | install the APK | — | Sideload the `.apk`; Android 8.0+ |
 
 Release archives already contain the game cache, prebuilt jars, and Java 24.
-You do not need to install Java or build the source to play.
+You do not need to install Java or build the source to play. The Android APK
+bundles the game cache and world server in one install.
 
 At the login screen, enter any new username to create a local character.
 Passwords are not used; if the client requires text in the password field, the
@@ -62,7 +64,7 @@ Wilderness players are the only population bots that can attack or be attacked.
 
 ## Single-RSC comparison
 
-Current comparison: **Single RS 2012 v0.15.1** and **Single-RSC v2.8.2**.
+Current comparison: **Single RS 2012 v0.16.0** and **Single-RSC v2.8.2**.
 
 | Area | Single RS 2012 | Single-RSC |
 |---|---|---|
