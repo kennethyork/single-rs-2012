@@ -19,11 +19,14 @@ if exist "%ROOT_DIR%world\world-server.jar" if exist "%ROOT_DIR%client.jar" (
   if exist "%ROOT_DIR%darkan-world-server\.jdk24\bin\java.exe" set "JAVA_BIN=%ROOT_DIR%darkan-world-server\.jdk24\bin\java.exe"
   if defined JAVA_HOME if exist "%JAVA_HOME%\bin\java.exe" set "JAVA_BIN=%JAVA_HOME%\bin\java.exe"
 )
-if "%XP_RATE%"=="" set "XP_RATE=1"
+rem With no rate given, the server uses the rate saved in game via ::xprate (default 1x).
+set "XP_RATE_ARG="
+if "%XP_RATE%"=="" goto valid_rate
 set "INVALID_RATE="
 for /f "delims=0123456789" %%A in ("%XP_RATE%") do set "INVALID_RATE=1"
 if defined INVALID_RATE goto invalid_rate
 if "%XP_RATE%"=="0" goto invalid_rate
+set "XP_RATE_ARG=-Ddarkan.xpRate=%XP_RATE%"
 goto valid_rate
 
 :invalid_rate
@@ -47,4 +50,4 @@ if not exist "%CACHE_DIR%\main_file_cache.dat2" (
 
 if not exist "%SAVE_DIR%" mkdir "%SAVE_DIR%"
 cd /d "%WORLD_DIR%"
-"%JAVA_BIN%" -Xmx3g -Ddarkan.singlePlayer=true -Ddarkan.cache.path="%CACHE_DIR%" -Ddarkan.save.path="%SAVE_DIR%" -Ddarkan.xpRate=%XP_RATE% -cp "%WORLD_JAR%;%CLIENT_JAR%" com.rs.SinglePlayerLauncher
+"%JAVA_BIN%" -Xmx3g -Ddarkan.singlePlayer=true -Ddarkan.cache.path="%CACHE_DIR%" -Ddarkan.save.path="%SAVE_DIR%" %XP_RATE_ARG% -cp "%WORLD_JAR%;%CLIENT_JAR%" com.rs.SinglePlayerLauncher
