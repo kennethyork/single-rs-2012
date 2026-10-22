@@ -267,8 +267,10 @@ stopped or its model is missing. Start Ollama, run
 
 ### I want a different XP rate
 
-Pass any positive whole number to the launcher, such as `50`. Starting without
-a number uses normal 1x XP.
+Type `::xprate 50` in game; the rate applies immediately and is remembered for
+later sessions. You can also pass a rate to the launcher, such as `50`, to use
+it for that session only. Starting without a number uses the saved rate, or 1x
+if none has been set.
 
 ## Building from source
 
