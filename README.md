@@ -24,7 +24,7 @@ Download the archive for your computer from the
 [latest release](https://github.com/kennethyork/single-rs-2012/releases/latest),
 extract the entire archive, and use its launcher:
 
-| Platform | Start at 1x XP | Example with 25x XP | Notes |
+| Platform | Start | Example with 25x XP | Notes |
 | --- | --- | --- | --- |
 | Linux x64 | `./run.sh` | `./run.sh 25` | Run from a terminal if double-clicking is disabled |
 | Windows x64 | `run.bat` | `run.bat 25` | Keep every extracted folder beside the launcher |
@@ -32,6 +32,12 @@ extract the entire archive, and use its launcher:
 
 Release archives already contain the game cache, prebuilt jars, and Java 24.
 You do not need to install Java or build the source to play.
+
+You can also change the XP rate while playing. Type `::xprate` to see the
+current rate or `::xprate 25` to switch to 25x; it applies from your next XP
+drop and is saved to `saves/xp-rate.txt`. Starting the launcher without a number
+uses the saved rate (1x if none has been set), while a number such as `25`
+overrides it for that session.
 
 At the login screen, enter any new username to create a local character.
 Passwords are not used; if the client requires text in the password field, the
@@ -50,7 +56,8 @@ text is ignored. The username `root` has access to owner commands.
 - 88 attackable Wilderness PK bots
 - Activity helpers for bosses, Dungeoneering, and Pest Control
 - Every lodestone destination unlocked, including quest-gated locations
-- Any whole-number XP multiplier, with 1x used by default
+- Any whole-number XP multiplier, with 1x used by default and in-game changes
+  through `::xprate`
 - Autosaving every 30 seconds and a final save during a normal shutdown
 
 Activity helpers do not earn XP, generate drops, or create saved accounts. The
@@ -62,7 +69,7 @@ Wilderness players are the only population bots that can attack or be attacked.
 
 ## Single-RSC comparison
 
-Current comparison: **Single RS 2012 v0.16.0** and **Single-RSC v2.8.2**.
+Current comparison: **Single RS 2012 v0.16.1** and **Single-RSC v2.8.2**.
 
 | Area | Single RS 2012 | Single-RSC |
 |---|---|---|
@@ -81,7 +88,7 @@ Current comparison: **Single RS 2012 v0.16.0** and **Single-RSC v2.8.2**.
 | Bot quests/minigames | Boss, Dungeoneering, and Pest Control helpers that do not earn XP or complete content | Party modes assist in fights, but bots do not complete quests or minigames |
 | Player automation | None | Removed completely |
 | Mobile | Desktop platforms only | Android client available; autonomous world bots remain desktop-only |
-| XP setting | Any positive whole number at launch | 1x–50x saved per character |
+| XP setting | Any positive whole number at launch or in game with `::xprate`, saved between sessions | 1x–50x saved per character |
 
 Single RS 2012 remains stronger as a socially connected simulated MMO because of its larger population, Friends List integration, clans, regional routines, marketplace, and polished native resource gathering. Single-RSC is stronger at preserving the RSC presentation while providing broader classic skill coverage and more general-world combat activity.
 
