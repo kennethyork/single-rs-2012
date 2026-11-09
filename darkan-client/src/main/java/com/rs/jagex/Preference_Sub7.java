@@ -21,7 +21,10 @@ public class Preference_Sub7 extends Preference {
 
 	@Override
 	int getDefaultValue() {
-		return manager.currentToolkit.method12777() && Class520.method11162(manager.currentToolkit.getValue()) ? 1 : 0;
+		// Maximum screen size: 0 = no limit, 1 = 1024x768, 2 = 800x600. The 2012
+		// client capped hardware renderers at 1024x768 for performance; current
+		// GPUs handle any size, so resizable mode now fills the window.
+		return 0;
 	}
 
 	public void method12663() {

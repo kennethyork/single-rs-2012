@@ -71,7 +71,8 @@ Wilderness players are the only population bots that can attack or be attacked.
 
 The game starts in the 2012 client's HD mode with every setting raised:
 OpenGL with per-pixel lighting, bloom, 4x anti-aliasing, HD water, and the
-highest render distance. Textures are drawn at 512 pixels instead of 128;
+highest render distance, and resizable mode fills the whole window instead
+of stopping at 1024x768. Textures are drawn at 512 pixels instead of 128;
 the 2012 materials are procedural, so this adds real detail rather than blur.
 On top of that, a post-processing pass adds FXAA,
 sharpening, a richer colour grade, and a light vignette, and the fog has been

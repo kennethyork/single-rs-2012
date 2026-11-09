@@ -28,6 +28,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PREFS_HD = {1: 2,    # anti-aliasing: 4x multisample
             2: 1,    # bloom (also enables the post-processing pass)
             5: 2,    # render distance: high
+            16: 0,   # maximum screen size: no limit
             20: 5,   # graphics toolkit: OpenGL HD
             22: 2}   # water: HD
 
