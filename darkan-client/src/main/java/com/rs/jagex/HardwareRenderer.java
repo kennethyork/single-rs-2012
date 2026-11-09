@@ -122,7 +122,20 @@ public abstract class HardwareRenderer extends AbstractRenderer {
 	int anInt8765;
 	int anInt8775;
 	int anInt8806;
+	/** Resolution HD textures are drawn at; the 2012 client used 128. */
 	int anInt8821;
+
+	/**
+	 * The 2012 materials are procedural, so drawing them at 512px gives real
+	 * extra detail rather than a blurry upscale. -Ddarkan.textureSize=128 restores
+	 * the original; any power of two from 64 to 1024 is accepted.
+	 */
+	static int textureSize() {
+		int size = Integer.getInteger("darkan.textureSize", 512);
+		if (size < 64 || size > 1024 || Integer.bitCount(size) != 1)
+			size = 512;
+		return size;
+	}
 	Class41[] aClass41Array8793;
 	Class55[] aClass55Array8802;
 	boolean aBool8805;
@@ -241,7 +254,7 @@ public abstract class HardwareRenderer extends AbstractRenderer {
 		aFloat8826 = -1.0f;
 		anInt8775 = 8;
 		anInt8806 = 3;
-		anInt8821 = 128;
+		anInt8821 = textureSize();
 		anInt8780 = 0;
 		aClass41Array8793 = new Class41[16];
 		aClass55Array8802 = new Class55[2];

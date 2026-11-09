@@ -192,7 +192,7 @@ public class JAGGLRenderer extends HardwareRenderer {
 					|| aString10200.contains("llvmpipe") || aString10200.contains("softpipe") || aString10200.contains("software rasterizer");
 			if (softwareRasterizer && !Boolean.getBoolean("darkan.allowSoftwareGL"))
 				throw new RuntimeException("OpenGL renderer is a software rasterizer: " + aString10200);
-			System.out.println("Graphics: OpenGL " + OpenGL.glGetString(7938) + " on " + aString10200);
+			System.out.println("Graphics: OpenGL " + OpenGL.glGetString(7938) + " on " + aString10200 + ", " + textureSize() + "px textures");
 			String string_9 = OpenGL.glGetString(7938);
 			String[] arr_10 = MovingAnimation.split(string_9.replace('.', ' '), ' ');
 			if (arr_10.length >= 2) {

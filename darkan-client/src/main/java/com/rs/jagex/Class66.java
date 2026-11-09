@@ -22,7 +22,7 @@ public class Class66 {
 		else {
 			TextureDetails class169_6 = anInterface22_675.getTextureDetails(i_1);
 			if (i_21 == -1)
-				i_21 = class169_6.isHalfSize ? 64 : aGraphicalRenderer_Sub2_676.anInt8821;
+				i_21 = class169_6.isHalfSize ? aGraphicalRenderer_Sub2_676.anInt8821 / 2 : aGraphicalRenderer_Sub2_676.anInt8821;
 
 			Interface6 interface6_7;
 			if (class169_6.hdr && aGraphicalRenderer_Sub2_676.method8471()) {

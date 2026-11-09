@@ -71,7 +71,9 @@ Wilderness players are the only population bots that can attack or be attacked.
 
 The game starts in the 2012 client's HD mode with every setting raised:
 OpenGL with per-pixel lighting, bloom, 4x anti-aliasing, HD water, and the
-highest render distance. On top of that, a post-processing pass adds FXAA,
+highest render distance. Textures are drawn at 512 pixels instead of 128;
+the 2012 materials are procedural, so this adds real detail rather than blur.
+On top of that, a post-processing pass adds FXAA,
 sharpening, a richer colour grade, and a light vignette, and the fog has been
 pushed back so you can see about 50% further than the 2012 client allowed.
 
@@ -97,6 +99,7 @@ Advanced options can be added to the `java` line in the launcher:
 | `-Ddarkan.safeMode=true` | Always start in safe mode |
 | `-Ddarkan.classicPostFx=true` | Use the original 2012 bloom without the new post-processing |
 | `-Ddarkan.fogDistanceMultiplier=1` | Use the original 2012 view distance |
+| `-Ddarkan.textureSize=128` | Use the original 2012 texture resolution (uses less graphics memory) |
 
 ### Extra effects on Windows with ReShade
 
