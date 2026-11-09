@@ -1,0 +1,5 @@
+Graphics: the game starts in HD mode with every setting raised and a
+post-processing pass. If HD cannot start on your computer, the game falls back
+to safe mode automatically and the launcher window explains why. Hold S while
+the game loads to force safe mode. See README.md, section "Graphics", for the
+in-game settings, advanced options, and adding ReShade on Windows.
