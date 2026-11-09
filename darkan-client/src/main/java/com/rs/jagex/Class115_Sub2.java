@@ -46,7 +46,7 @@ public class Class115_Sub2 extends Class115 {
 				}
 			}
 
-			programString.append(new String(class505_sub2_sub1_1.getGLShaderData(shaderName)));
+			programString.append(renameReservedWords(new String(class505_sub2_sub1_1.getGLShaderData(shaderName))));
 			aString9434 = programString.toString();
 			System.out.println(aString9434);
 		}
@@ -64,7 +64,7 @@ public class Class115_Sub2 extends Class115 {
 				}
 			}
 
-			programString.append(new String(class505_sub2_sub1_1.getGLShaderData(aString1246)));
+			programString.append(renameReservedWords(new String(class505_sub2_sub1_1.getGLShaderData(aString1246))));
 			shaderProgram = programString.toString();
 			System.out.println(shaderProgram);
 		}
@@ -76,6 +76,38 @@ public class Class115_Sub2 extends Class115 {
 		this(class505_sub2_sub1_1, class99_3);
 		aClass101_Sub1_9421 = class101_sub1_2;
 		aGraphicalRenderer_Sub2_Sub1_9419 = class505_sub2_sub1_1;
+	}
+
+	private static final java.util.regex.Pattern SAMPLER_UNIFORM = java.util.regex.Pattern.compile("uniform\\s+sampler\\w*\\s+(\\w+)\\s*;");
+
+	/**
+	 * Gives every sampler uniform its own spare texture unit right after linking.
+	 * GLSL samplers all start on unit 0, and the game only assigns units to the
+	 * samplers a draw actually uses, so an unused samplerCube can end up sharing
+	 * unit 0 with a sampler2D. NVIDIA tolerates that, but the GL spec (and Mesa,
+	 * the AMD/Intel driver on Linux) rejects every draw with GL_INVALID_OPERATION.
+	 * Samplers the game uses are reassigned at bind time as before.
+	 */
+	/**
+	 * Some 2012 shaders use {@code input}/{@code output} as variable names. Those
+	 * are reserved words in GLSL; NVIDIA accepts them but Mesa refuses to compile.
+	 */
+	static String renameReservedWords(String source) {
+		return source.replaceAll("\\b(input|output)\\b", "jx_$1");
+	}
+
+	private void parkSamplers() {
+		int unit = 15;
+		for (String source : new String[] { aString9434, shaderProgram }) {
+			if (source == null)
+				continue;
+			java.util.regex.Matcher m = SAMPLER_UNIFORM.matcher(source);
+			while (m.find() && unit > 0) {
+				int location = OpenGL.glGetUniformLocation(anInt9423, m.group(1));
+				if (location != -1)
+					OpenGL.glUniform1i(location, unit--);
+			}
+		}
 	}
 
 	@Override
@@ -91,6 +123,10 @@ public class Class115_Sub2 extends Class115 {
 		OpenGL.glCompileShader(i_4);
 		OpenGL.glGetShaderiv(i_4, 35713, anIntArray9417, 0);
 		if (anIntArray9417[0] == 0) {
+			byte[] log = new byte[4096];
+			int[] logLength = new int[1];
+			OpenGL.glGetShaderInfoLog(i_4, log.length, logLength, 0, log, 0);
+			System.err.println("Graphics: shader " + (i_1 == 35633 ? shaderName : aString1246) + " failed to compile:\n" + new String(log, 0, Math.max(0, Math.min(logLength[0], log.length))));
 			OpenGL.glDeleteShader(i_4);
 			i_4 = 0;
 		}
@@ -202,6 +238,7 @@ public class Class115_Sub2 extends Class115 {
 				return false;
 			} else {
 				OpenGL.glUseProgram(anInt9423);
+				parkSamplers();
 				int i_1 = -1;
 
 				int i_2;
@@ -305,6 +342,7 @@ public class Class115_Sub2 extends Class115 {
 				return false;
 			} else {
 				OpenGL.glUseProgram(anInt9423);
+				parkSamplers();
 				int i_1 = -1;
 
 				int i_2;
@@ -474,6 +512,7 @@ public class Class115_Sub2 extends Class115 {
 				return false;
 			} else {
 				OpenGL.glUseProgram(anInt9423);
+				parkSamplers();
 				int i_1 = -1;
 
 				int i_2;

@@ -185,8 +185,14 @@ public class JAGGLRenderer extends HardwareRenderer {
 			anOpenGL10191.method2570();
 			aString10185 = OpenGL.glGetString(7936).toLowerCase();
 			aString10200 = OpenGL.glGetString(7937).toLowerCase();
-			if ((aString10185.indexOf("microsoft") != -1) || (aString10185.indexOf("brian paul") != -1) || (aString10185.indexOf("mesa") != -1))
-				throw new RuntimeException("");
+			// The 2012 client rejected every vendor string containing "mesa", but Mesa
+			// is now the normal driver for AMD and Intel GPUs on Linux. Only refuse
+			// CPU-only rasterizers, which are too slow for the HD toolkit.
+			boolean softwareRasterizer = aString10185.contains("microsoft") || aString10200.contains("gdi generic")
+					|| aString10200.contains("llvmpipe") || aString10200.contains("softpipe") || aString10200.contains("software rasterizer");
+			if (softwareRasterizer && !Boolean.getBoolean("darkan.allowSoftwareGL"))
+				throw new RuntimeException("OpenGL renderer is a software rasterizer: " + aString10200);
+			System.out.println("Graphics: OpenGL " + OpenGL.glGetString(7938) + " on " + aString10200);
 			String string_9 = OpenGL.glGetString(7938);
 			String[] arr_10 = MovingAnimation.split(string_9.replace('.', ' '), ' ');
 			if (arr_10.length >= 2) {
@@ -388,6 +394,14 @@ public class JAGGLRenderer extends HardwareRenderer {
 	}
 
 	byte[] getGLShaderData(String string_1) {
+		// GLSL files bundled under /shaders/gl/ replace the cache's copy of the
+		// same name (currently the post-processing composite pass).
+		if (!Boolean.getBoolean("darkan.classicPostFx"))
+			try (java.io.InputStream in = JAGGLRenderer.class.getResourceAsStream("/shaders/gl/" + string_1)) {
+				if (in != null)
+					return in.readAllBytes();
+			} catch (java.io.IOException ignored) {
+			}
 		return getCacheShaderData("gl", string_1);
 	}
 

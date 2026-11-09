@@ -17,7 +17,7 @@ public class Preference_Sub4 extends Preference {
 
 	@Override
 	int getDefaultValue() {
-		return 0;
+		return 2; // 4x multisample anti-aliasing
 	}
 
 	public void method12639() {

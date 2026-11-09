@@ -104,6 +104,8 @@ public class NativeLibraryLoader implements LibraryLoader {
 				return nativeLibraryIndex.method5631(string_4);
 			else {
 				byte[] bytes_5 = nativeLibraryIndex.getFileByName(string_4, "");
+				if (bytes_5 != null && OS_AND_ARCHITECTURE.startsWith("linux/"))
+					bytes_5 = ElfJawtCompat.patch(bytes_5);
 				Object obj_6 = null;
 				File file_7 = CutsceneAction_Sub23.method14681(string_3);
 				if (bytes_5 != null && file_7 != null) {

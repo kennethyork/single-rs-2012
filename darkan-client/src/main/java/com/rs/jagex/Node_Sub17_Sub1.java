@@ -50,6 +50,8 @@ public class Node_Sub17_Sub1 extends ClanSettingDeltaUpdate {
 						Renderers.CURRENT_RENDERER.method8439(class282_sub1_18);
 					}
 				} catch (Throwable throwable_14) {
+					System.err.println("Graphics toolkit " + renderType + " failed to start; falling back to safe mode.");
+					throwable_14.printStackTrace();
 					int i_9 = Class393.preferences.currentToolkit.getValue();
 					if (i_9 == 2)
 						client.aBool7171 = true;

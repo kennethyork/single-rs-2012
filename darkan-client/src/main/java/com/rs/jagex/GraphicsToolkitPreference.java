@@ -2,6 +2,9 @@ package com.rs.jagex;
 
 public class GraphicsToolkitPreference extends Preference {
 
+	/** OpenGL HD toolkit: shaders, bloom, HD water and the post-processing filter. */
+	public static final int DEFAULT_TOOLKIT = 5;
+
 	public boolean aBool7914;
 	boolean aBool7913 = true;
 
@@ -27,7 +30,7 @@ public class GraphicsToolkitPreference extends Preference {
 		aBool7914 = true;
 		if (Boolean.getBoolean("darkan.android"))
 			return 0;
-		return 2;
+		return DEFAULT_TOOLKIT;
 	}
 
 	public int getValue() {
@@ -60,12 +63,12 @@ public class GraphicsToolkitPreference extends Preference {
 
 	int method7786() {
 		aBool7914 = true;
-		return Boolean.getBoolean("darkan.android") ? 0 : 2;
+		return Boolean.getBoolean("darkan.android") ? 0 : DEFAULT_TOOLKIT;
 	}
 
 	int method7787() {
 		aBool7914 = true;
-		return Boolean.getBoolean("darkan.android") ? 0 : 2;
+		return Boolean.getBoolean("darkan.android") ? 0 : DEFAULT_TOOLKIT;
 	}
 
 	@Override

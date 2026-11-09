@@ -361,7 +361,14 @@ public class IndexLoaders {
 			EntityNode_Sub7.GAME_TIPS_LOADER = null;
 			Class302.anInterface27Array3559 = null;
 			Class358.method6234();
-			client.aBool7465 = Boolean.getBoolean("darkan.singlePlayer") || Class393.preferences.safeMode.getValue() == 1;
+			// Safe mode is used when forced with -Ddarkan.safeMode=true, when the S key
+			// was held during loading, or when the previous launch crashed before
+			// reaching the login screen (safeMode stays 1 until client.java clears it).
+			client.aBool7465 = Boolean.getBoolean("darkan.safeMode") || Class393.preferences.safeMode.getValue() == 1;
+			if (client.aBool7465)
+				System.out.println("Graphics: starting in safe mode.");
+			else
+				System.out.println("Graphics: starting toolkit " + Class393.preferences.toolKit.getValue() + ".");
 			Class393.preferences.setValue(Class393.preferences.safeMode, 1);
 			if (client.aBool7465 || (Class393.preferences.toolKit.aBool7914 && Class11.SYSTEM_INFO.ram < 512 && Class11.SYSTEM_INFO.ram != 0))
 				Class393.preferences.setValue(Class393.preferences.toolKit, 0);

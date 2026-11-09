@@ -17,7 +17,7 @@ public class WaterPreference extends Preference {
 
 	@Override
 	int getDefaultValue() {
-		return 1;
+		return 2; // HD water
 	}
 
 	public int getValue() {

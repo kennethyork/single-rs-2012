@@ -35,7 +35,10 @@ public class Loader extends Panel implements ImageObserver, MenuContainer, Seria
 	public static Properties clientParams = new Properties();
 
 	public static int RENDER_DISTANCE_MULTIPLIER = 1; //Default 1
-	public static int FOG_DISTANCE_MULTIPLIER = 1; //Default 1
+	// Pushes the far plane (and with it the fog) from ~35 to ~53 tiles so the
+	// HIGH render distance (48 tiles) is no longer cut off. Override with
+	// -Ddarkan.fogDistanceMultiplier=1 for the original 2012 distance.
+	public static int FOG_DISTANCE_MULTIPLIER = Integer.getInteger("darkan.fogDistanceMultiplier", 4);
 	public static boolean X10_HITS_MODE = false;
 
 	public static Loader INSTANCE;

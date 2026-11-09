@@ -29,7 +29,7 @@ public class BloomPreference extends Preference {
 
 	@Override
 	int getDefaultValue() {
-		return 0;
+		return 1;
 	}
 
 	public void method12703() {

@@ -17,7 +17,7 @@ public class RenderDistancePreference extends Preference {
 
 	@Override
 	int getDefaultValue() {
-		return RenderDistance.LOW.ordinal();
+		return RenderDistance.HIGH.ordinal();
 	}
 
 	public void method12749() {
