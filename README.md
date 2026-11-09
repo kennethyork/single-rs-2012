@@ -67,6 +67,54 @@ Wilderness players are the only population bots that can attack or be attacked.
 | --- | --- | --- |
 | ![Single RS 2012 login screen](docs/images/login.png) | ![Single RS 2012 gameplay](docs/images/gameplay.png) | ![Simulated players at the Grand Exchange](docs/images/grandexchange.png) |
 
+## Graphics
+
+The game starts in the 2012 client's HD mode with every setting raised:
+OpenGL with per-pixel lighting, bloom, 4x anti-aliasing, HD water, and the
+highest render distance. On top of that, a post-processing pass adds FXAA,
+sharpening, a richer colour grade, and a light vignette, and the fog has been
+pushed back so you can see about 50% further than the 2012 client allowed.
+
+| Classic (previous releases) | HD (v0.17.0 and later) |
+| --- | --- |
+| ![Lumbridge in classic safe mode](docs/images/graphics-classic.png) | ![Lumbridge in HD with post-processing](docs/images/graphics-hd.png) |
+
+These are improvements to the 2012 engine, not a remaster: the models and
+textures are still the 2012 ones, so the game looks like 2012 RuneScape at its
+best rather than like RuneScape 3.
+
+Everything can be changed in game from the Graphics Settings menu. Turning off
+**Bloom** also turns off the post-processing pass. If HD cannot start on your
+computer, the game falls back to safe mode automatically and explains why in
+the launcher output; if a launch ever crashes while starting the renderer, the
+next launch comes back in safe mode. Holding **S** while the game loads also
+starts it in safe mode.
+
+Advanced options can be added to the `java` line in the launcher:
+
+| Option | Effect |
+| --- | --- |
+| `-Ddarkan.safeMode=true` | Always start in safe mode |
+| `-Ddarkan.classicPostFx=true` | Use the original 2012 bloom without the new post-processing |
+| `-Ddarkan.fogDistanceMultiplier=1` | Use the original 2012 view distance |
+
+### Extra effects on Windows with ReShade
+
+Windows players can layer [ReShade](https://reshade.me) on top for ambient
+occlusion, depth of field, and other effects the 2012 engine cannot do itself:
+
+1. Run the ReShade installer and choose `runtime\bin\java.exe` from this
+   folder. Java, not `run.bat`, is the program that draws the game.
+2. Pick **OpenGL** as the rendering API (the game's HD mode uses OpenGL; pick
+   Direct3D 9 only if you switched the game to DirectX).
+3. Choose effects such as MXAO (ambient occlusion), SMAA, and LumaSharpen.
+4. Start the game with `run.bat` and press **Home** to open the ReShade menu.
+   If ambient occlusion looks wrong, open the **Generic Depth** add-on tab and
+   pick the depth buffer that matches the scene.
+
+Your graphics driver's control panel (NVIDIA Control Panel or AMD Software) can
+also force 16x anisotropic filtering for the same `java.exe`.
+
 ## Single-RSC comparison
 
 Current comparison: **Single RS 2012 v0.16.1** and **Single-RSC v2.8.2**.
@@ -258,6 +306,14 @@ Extract the complete release archive instead of moving only the launcher. The
 The original client libraries are Intel x64. Intel Macs run them directly;
 Apple Silicon Macs need Rosetta 2. You may also need to allow the downloaded
 launcher in macOS Privacy & Security settings.
+
+### The game looks flat or runs in safe mode
+
+The launcher output says which graphics mode started. A line such as
+`Graphics toolkit 5 failed to start` is followed by the reason. Updating your
+graphics driver fixes most failures. A computer without a working GPU driver
+(for example a virtual machine) can only use safe mode. The in-game Graphics
+Settings menu switches between modes at any time.
 
 ### Bots do not reply
 
