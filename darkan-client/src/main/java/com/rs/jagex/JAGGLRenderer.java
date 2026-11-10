@@ -395,8 +395,9 @@ public class JAGGLRenderer extends HardwareRenderer {
 
 	byte[] getGLShaderData(String string_1) {
 		// GLSL files bundled under /shaders/gl/ replace the cache's copy of the
-		// same name (currently the post-processing composite pass).
-		if (!Boolean.getBoolean("darkan.classicPostFx"))
+		// same name: the post-processing composite pass and the model lighting.
+		boolean classic = string_1.startsWith("Model.") ? Boolean.getBoolean("darkan.classicLighting") : Boolean.getBoolean("darkan.classicPostFx");
+		if (!classic)
 			try (java.io.InputStream in = JAGGLRenderer.class.getResourceAsStream("/shaders/gl/" + string_1)) {
 				if (in != null)
 					return in.readAllBytes();

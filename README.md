@@ -74,9 +74,24 @@ OpenGL with per-pixel lighting, bloom, 4x anti-aliasing, HD water, and the
 highest render distance, and resizable mode fills the whole window instead
 of stopping at 1024x768. Textures are drawn at 512 pixels instead of 128;
 the 2012 materials are procedural, so this adds real detail rather than blur.
-On top of that, a post-processing pass adds FXAA,
-sharpening, a richer colour grade, and a light vignette, and the fog has been
-pushed back so you can see about 50% further than the 2012 client allowed.
+The fog has been pushed back so you can see about 50% further than the 2012
+client allowed.
+
+The renderer itself has also been upgraded:
+
+- **Per-pixel lighting** replaces the 2012 per-vertex lighting, so characters,
+  trees, and buildings shade smoothly, with a soft sky-and-ground ambient and a
+  subtle rim light.
+- **Ambient occlusion** darkens creases, corners, and the ground where objects
+  meet it, which gives the scene much more depth.
+- **Sun shadows**: characters, trees, buildings, and scenery cast shadows on the
+  ground and on each other, in the direction of the sun.
+- A **post-processing pass** adds FXAA, sharpening, a richer colour grade, and a
+  light vignette.
+
+Shadows and ambient occlusion are screen-space effects: they are worked out
+from what is on screen, so an object just outside the view does not cast a
+shadow into it, and shadows are limited to a few tiles in length.
 
 | Classic (previous releases) | HD (v0.17.0 and later) |
 | --- | --- |
@@ -87,7 +102,8 @@ textures are still the 2012 ones, so the game looks like 2012 RuneScape at its
 best rather than like RuneScape 3.
 
 Everything can be changed in game from the Graphics Settings menu. Turning off
-**Bloom** also turns off the post-processing pass. If HD cannot start on your
+**Bloom** also turns off the post-processing pass, ambient occlusion, and sun
+shadows, which is the quickest way to gain speed on an older graphics card. If HD cannot start on your
 computer, the game falls back to safe mode automatically and explains why in
 the launcher output; if a launch ever crashes while starting the renderer, the
 next launch comes back in safe mode. Holding **S** while the game loads also
@@ -101,6 +117,9 @@ Advanced options can be added to the `java` line in the launcher:
 | `-Ddarkan.classicPostFx=true` | Use the original 2012 bloom without the new post-processing |
 | `-Ddarkan.fogDistanceMultiplier=1` | Use the original 2012 view distance |
 | `-Ddarkan.textureSize=128` | Use the original 2012 texture resolution (uses less graphics memory) |
+| `-Ddarkan.shadows=false` | Turn off sun shadows |
+| `-Ddarkan.ambientOcclusion=false` | Turn off ambient occlusion |
+| `-Ddarkan.classicLighting=true` | Use the original 2012 per-vertex lighting |
 
 ### Extra effects on Windows with ReShade
 

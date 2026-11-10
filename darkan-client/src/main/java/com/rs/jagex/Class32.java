@@ -83,7 +83,11 @@ public class Class32 {
 		anInterface9_368 = anInterface29_372.method200();
 		anInterface29_366 = aGraphicalRenderer_Sub2_371.method14064(Class150.aClass150_1949, aClass76_373, anInt367, anInt365);
 		anInterface9_369 = anInterface29_366.method200();
-		anInterface8_362 = aGraphicalRenderer_Sub2_371.method8419(anInt367, anInt365);
+		// A sampleable depth texture lets the composite pass add ambient occlusion.
+		if (aGraphicalRenderer_Sub2_371 instanceof JAGGLRenderer && PostFx.wantsDepth())
+			anInterface8_362 = new SceneDepthTexture(anInt367, anInt365);
+		else
+			anInterface8_362 = aGraphicalRenderer_Sub2_371.method8419(anInt367, anInt365);
 		int i_1 = aVector375.size();
 
 		for (int i_2 = 0; i_2 < i_1; i_2++) {
@@ -146,7 +150,12 @@ public class Class32 {
 					interface29_7 = anInterface29_366;
 
 				class55_3.method1103(i_6, aClass158_Sub1_374, interface29_7, anInterface29_366);
+				boolean finalPass = bool_5 && i_6 == i_4 - 1 && anInterface8_362 instanceof SceneDepthTexture;
+				if (finalPass)
+					PostFx.bind((SceneDepthTexture) anInterface8_362, aGraphicalRenderer_Sub2_371);
 				method820();
+				if (finalPass)
+					PostFx.unbind();
 				class55_3.method1104();
 				Interface29 interface29_8 = anInterface29_363;
 				anInterface29_363 = anInterface29_372;

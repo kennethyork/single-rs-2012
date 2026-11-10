@@ -2108,6 +2108,7 @@ public abstract class HardwareRenderer extends AbstractRenderer {
 	public void method8423(Matrix44Var matrix44var_1) {
 		aClass294_8706 = matrix44var_1;
 		aClass384_8740.fromVarMatrix44(aClass294_8706);
+		PostFx.noteView(aClass384_8740, aClass384_8724);
 		aClass294_8804.method5209(matrix44var_1);
 		aClass294_8804.method5207();
 		aClass384_8814.fromVarMatrix44(aClass294_8804);
@@ -2120,6 +2121,7 @@ public abstract class HardwareRenderer extends AbstractRenderer {
 	@Override
 	public void method8424(Matrix44 matrix44_1) {
 		aClass384_8724.copy(matrix44_1);
+		PostFx.noteProjection(aClass384_8724, aClass384_8740);
 		method13926();
 		if (aClass33_8719 == Class33.aClass33_381)
 			method14030();
@@ -2332,6 +2334,7 @@ public abstract class HardwareRenderer extends AbstractRenderer {
 	@Override
 	public void method8446(Matrix44 matrix44_1) {
 		aClass384_8724.copy(matrix44_1);
+		PostFx.noteProjection(aClass384_8724, aClass384_8740);
 		method13926();
 		if (aClass33_8719 == Class33.aClass33_381)
 			method14030();
@@ -2372,6 +2375,7 @@ public abstract class HardwareRenderer extends AbstractRenderer {
 	public void method8457(Matrix44Var matrix44var_1) {
 		aClass294_8706 = matrix44var_1;
 		aClass384_8740.fromVarMatrix44(aClass294_8706);
+		PostFx.noteView(aClass384_8740, aClass384_8724);
 		aClass294_8804.method5209(matrix44var_1);
 		aClass294_8804.method5207();
 		aClass384_8814.fromVarMatrix44(aClass294_8804);
@@ -3479,6 +3483,7 @@ public abstract class HardwareRenderer extends AbstractRenderer {
 	@Override
 	public void method8586(Matrix44 matrix44_1) {
 		aClass384_8724.copy(matrix44_1);
+		PostFx.noteProjection(aClass384_8724, aClass384_8740);
 		method13926();
 		if (aClass33_8719 == Class33.aClass33_381)
 			method14030();
